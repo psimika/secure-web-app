@@ -7,9 +7,9 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"time"
 
 	_ "github.com/lib/pq"
+	"github.com/psimika/secure-web-app/petfind"
 )
 
 var (
@@ -19,14 +19,7 @@ var (
 	showPetsTmpl    = template.Must(template.New("showPetsTmpl").Parse(baseTemplate + showPetsTemplate))
 )
 
-// Pet is the pet of the app.
-type Pet struct {
-	Name    string
-	Age     int
-	Created time.Time
-}
-
-var pets = []Pet{
+var pets = []petfind.Pet{
 	{Name: "Blackie", Age: 5},
 	{Name: "Rocky", Age: 6},
 	{Name: "Lasie", Age: 7},
@@ -119,9 +112,9 @@ func (app *App) servePets(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	pets := make([]*Pet, 0)
+	pets := make([]*petfind.Pet, 0)
 	for rows.Next() {
-		var p Pet
+		var p petfind.Pet
 		if err := rows.Scan(&p.Name, &p.Created); err != nil {
 			http.Error(w, fmt.Sprintf("Error scanning pets: %q", err), http.StatusInternalServerError)
 			return
