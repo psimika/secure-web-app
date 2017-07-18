@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 
+	_ "github.com/lib/pq"
+
 	"github.com/psimika/secure-web-app/petfind"
 	"github.com/psimika/secure-web-app/petfind/postgres"
 )

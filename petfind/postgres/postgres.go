@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 
-	_ "github.com/lib/pq"
 	"github.com/psimika/secure-web-app/petfind"
 )
 
