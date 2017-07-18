@@ -10,6 +10,7 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/psimika/secure-web-app/petfind"
+	"github.com/psimika/secure-web-app/petfind/postgres"
 )
 
 var (
@@ -26,7 +27,8 @@ var pets = []petfind.Pet{
 }
 
 type App struct {
-	db *sql.DB
+	db    *sql.DB
+	Store petfind.Store
 }
 
 func main() {
@@ -41,12 +43,18 @@ func main() {
 		log.Fatalf("Error opening database: %q", err)
 	}
 	defer db.Close()
-	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS pets (id serial PRIMARY KEY, name varchar(50), created timestamp)"); err != nil {
+	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS pets (id serial PRIMARY KEY, name varchar(50), added timestamp)"); err != nil {
 		log.Printf("Error creating table pets %q", err)
 		return
 	}
 
-	app := &App{db: db}
+	store, err := postgres.NewStore(*datasource)
+	if err != nil {
+		log.Println("NewStore failed:", err)
+		return
+	}
+
+	app := &App{db: db, Store: store}
 
 	http.Handle("/", http.HandlerFunc(homeHandler))
 	http.Handle("/form", http.HandlerFunc(searchReplyHandler))
@@ -97,15 +105,17 @@ func (app *App) serveAddPet(w http.ResponseWriter, r *http.Request) {
 
 func (app *App) handleAddPet(w http.ResponseWriter, r *http.Request) {
 	name := r.FormValue("name")
-	if _, err := app.db.Exec("INSERT INTO pets(name, created) VALUES ($1, now())", name); err != nil {
-		http.Error(w, fmt.Sprintf("Error adding product: %q", err), http.StatusInternalServerError)
+	p := &petfind.Pet{Name: name}
+	if err := app.Store.AddPet(p); err != nil {
+		http.Error(w, fmt.Sprintf("Error adding pet: %q", err), http.StatusInternalServerError)
 		return
 	}
+
 	w.Write([]byte("pet added!"))
 }
 
 func (app *App) servePets(w http.ResponseWriter, r *http.Request) {
-	rows, err := app.db.Query("SELECT name, created FROM pets")
+	rows, err := app.db.Query("SELECT id, name, added FROM pets")
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error selecting pets: %q", err), http.StatusInternalServerError)
 		return
@@ -115,7 +125,7 @@ func (app *App) servePets(w http.ResponseWriter, r *http.Request) {
 	pets := make([]*petfind.Pet, 0)
 	for rows.Next() {
 		var p petfind.Pet
-		if err := rows.Scan(&p.Name, &p.Created); err != nil {
+		if err := rows.Scan(&p.ID, &p.Name, &p.Added); err != nil {
 			http.Error(w, fmt.Sprintf("Error scanning pets: %q", err), http.StatusInternalServerError)
 			return
 		}
@@ -172,9 +182,11 @@ const (
 {{define "content"}}
   {{range .}}
     <li>
+      <span>ID: {{.ID}}</span>
+	  <br>
       <span>Name: {{.Name}}</span>
       <br>
-	  <span>Created: {{.Created}}</span>
+	  <span>Added: {{.Added}}</span>
 	</li>
   {{end}}
 {{end}}
