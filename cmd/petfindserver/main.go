@@ -115,23 +115,11 @@ func (app *App) handleAddPet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *App) servePets(w http.ResponseWriter, r *http.Request) {
-	rows, err := app.db.Query("SELECT id, name, added FROM pets")
+	pets, err := app.Store.GetAllPets()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error selecting pets: %q", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Error getting all pets: %v", err), http.StatusInternalServerError)
 		return
 	}
-	defer rows.Close()
-
-	pets := make([]*petfind.Pet, 0)
-	for rows.Next() {
-		var p petfind.Pet
-		if err := rows.Scan(&p.ID, &p.Name, &p.Added); err != nil {
-			http.Error(w, fmt.Sprintf("Error scanning pets: %q", err), http.StatusInternalServerError)
-			return
-		}
-		pets = append(pets, &p)
-	}
-
 	err = showPetsTmpl.Execute(w, pets)
 	if err != nil {
 		http.Error(w, "internal server error", 500)
