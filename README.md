@@ -13,3 +13,5 @@ Gerrand, A. (2012). *Organizing Go code* [online] Available at: https://blog.gol
 Johnson, B. (2014). *Structuring Applications in Go* [online] Available at: https://medium.com/@benbjohnson/structuring-applications-in-go-3b04be4ff091 [Accessed: July 18 2017]
 
 Johnson, B. (2016). *Standard Package Layout* [online] Available at: https://medium.com/@benbjohnson/standard-package-layout-7cdbc8391fc1 [Accessed: July 18 2017]
+
+Pike, R. (2013). *The cover story* [online] Available at: https://blog.golang.org/cover [Accessed: July 18 2017]
