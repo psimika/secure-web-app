@@ -1,14 +1,12 @@
 package main
 
 import (
-	"database/sql"
 	"flag"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 
-	_ "github.com/lib/pq"
 	"github.com/psimika/secure-web-app/petfind"
 	"github.com/psimika/secure-web-app/petfind/postgres"
 )
@@ -27,7 +25,6 @@ var pets = []petfind.Pet{
 }
 
 type App struct {
-	db    *sql.DB
 	Store petfind.Store
 }
 
@@ -38,23 +35,13 @@ func main() {
 		log.Fatal("no database datasource provided")
 	}
 
-	db, err := sql.Open("postgres", *datasource)
-	if err != nil {
-		log.Fatalf("Error opening database: %q", err)
-	}
-	defer db.Close()
-	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS pets (id serial PRIMARY KEY, name varchar(50), added timestamp)"); err != nil {
-		log.Printf("Error creating table pets %q", err)
-		return
-	}
-
 	store, err := postgres.NewStore(*datasource)
 	if err != nil {
 		log.Println("NewStore failed:", err)
 		return
 	}
 
-	app := &App{db: db, Store: store}
+	app := &App{Store: store}
 
 	http.Handle("/", http.HandlerFunc(homeHandler))
 	http.Handle("/form", http.HandlerFunc(searchReplyHandler))

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	_ "github.com/lib/pq"
 	"github.com/psimika/secure-web-app/petfind"
 )
 
@@ -18,5 +19,24 @@ func NewStore(datasource string) (petfind.Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error connecting to postgres: %v", err)
 	}
-	return &store{db}, nil
+
+	s := &store{db}
+	if err := s.MakeSchema(); err != nil {
+		return nil, fmt.Errorf("error making schema: %v", err)
+	}
+	return s, nil
+}
+
+func (db *store) MakeSchema() error {
+	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS pets (id serial PRIMARY KEY, name varchar(50), added timestamp)"); err != nil {
+		return fmt.Errorf("error creating table pets: %v", err)
+	}
+	return nil
+}
+
+func (db *store) DropSchema() error {
+	if _, err := db.Exec("DROP TABLE pets"); err != nil {
+		return fmt.Errorf("error dropping table pets: %v", err)
+	}
+	return nil
 }

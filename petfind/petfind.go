@@ -13,4 +13,7 @@ type Pet struct {
 type Store interface {
 	AddPet(*Pet) error
 	GetAllPets() ([]Pet, error)
+
+	MakeSchema() error
+	DropSchema() error
 }
