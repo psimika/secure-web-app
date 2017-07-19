@@ -10,7 +10,9 @@ Bourgon, P. (2014). *Go: Best Practices for Production Environments* [online] Av
 
 Edwards, A. (2015). *Practical Persistence in Go: Organising Database Access* [online] Available at: http://www.alexedwards.net/blog/organising-database-access [Accessed: July 18 2017]
 
-Gerrand, A. (2011). *Error handling and Go* [online] Available at: https://blog.golang.org/error-handling-and-go [Accessed: July 19 2017]
+Gerrand, A. (2011a). *Error handling and Go* [online] Available at: https://blog.golang.org/error-handling-and-go [Accessed: July 19 2017]
+
+Gerrand, A. (2011b). *Godoc: documenting Go code* [online] Available at: https://blog.golang.org/godoc-documenting-go-code [Accessed: July 19 2017]
 
 Gerrand, A. (2012). *Organizing Go code* [online] Available at: https://blog.golang.org/organizing-go-code [Accessed: July 18 2017]
 

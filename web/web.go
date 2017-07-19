@@ -25,7 +25,7 @@ func E(err error, message string, code int) *Error {
 
 // handler is a custom HTTP handler that can return an *Error. It is used
 // instead of the standard http.Handler in order to simplify repetitive error
-// handling as proposed by Gerrand (2011):
+// handling as proposed by Gerrand (2011a):
 // https://blog.golang.org/error-handling-and-go
 type handler func(http.ResponseWriter, *http.Request) *Error
 
