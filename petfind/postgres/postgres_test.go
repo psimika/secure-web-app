@@ -26,9 +26,10 @@ func init() {
 // To include the test coverage of the db tests:
 //
 // go test -tags=db -pass '' -coverprofile=cover.out -covermode=count
+//
 // go tool cover -html=cover.out
 //
-// See: https://blog.golang.org/cover
+// (Pike 2013) https://blog.golang.org/cover
 
 func setup(t *testing.T) petfind.Store {
 	if *pass == "" {
