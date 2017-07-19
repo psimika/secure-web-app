@@ -15,3 +15,5 @@ Johnson, B. (2014). *Structuring Applications in Go* [online] Available at: http
 Johnson, B. (2016). *Standard Package Layout* [online] Available at: https://medium.com/@benbjohnson/standard-package-layout-7cdbc8391fc1 [Accessed: July 18 2017]
 
 Pike, R. (2013). *The cover story* [online] Available at: https://blog.golang.org/cover [Accessed: July 18 2017]
+
+Valsorda, F. (2016). *So you want to expose Go on the Internet*  [online] Available at: https://blog.cloudflare.com/exposing-go-on-the-internet/ [Accessed: July 19 2017]
