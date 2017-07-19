@@ -1,0 +1,9 @@
+{{define "content"}}
+  {{if not .}}
+    no pet found
+  {{else}}
+    <span>Name: {{.Name}}</span>
+    <br>
+    <span>Added: {{.Added}}</span>
+  {{end}}
+{{end}}

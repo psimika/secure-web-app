@@ -2,170 +2,46 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"html/template"
+	"go/build"
 	"log"
 	"net/http"
 
 	_ "github.com/lib/pq"
 
-	"github.com/psimika/secure-web-app/petfind"
 	"github.com/psimika/secure-web-app/petfind/postgres"
+	"github.com/psimika/secure-web-app/web"
 )
-
-var (
-	homeTmpl        = template.Must(template.New("homeTmpl").Parse(baseTemplate + searchTemplate))
-	searchReplyTmpl = template.Must(template.New("searchReplyTmpl").Parse(baseTemplate + searchReplyTemplate))
-	addPetTmpl      = template.Must(template.New("addPetTmpl").Parse(baseTemplate + addPetTemplate))
-	showPetsTmpl    = template.Must(template.New("showPetsTmpl").Parse(baseTemplate + showPetsTemplate))
-)
-
-var pets = []petfind.Pet{
-	{Name: "Blackie", Age: 5},
-	{Name: "Rocky", Age: 6},
-	{Name: "Lasie", Age: 7},
-}
-
-type App struct {
-	Store petfind.Store
-}
 
 func main() {
-	var datasource = flag.String("datasource", "", "the database URL")
+	var (
+		dataSource = flag.String("datasource", "", "the database URL")
+		httpAddr   = flag.String("http", ":8080", "HTTP address for the server to listen on")
+		tmplPath   = flag.String("tmpl", defaultTmplPath(), "path containing the application's templates")
+	)
 	flag.Parse()
-	if *datasource == "" {
-		log.Fatal("no database datasource provided")
+
+	if *dataSource == "" {
+		log.Fatal("No database datasource provided, exiting...")
 	}
 
-	store, err := postgres.NewStore(*datasource)
+	store, err := postgres.NewStore(*dataSource)
 	if err != nil {
 		log.Println("NewStore failed:", err)
 		return
 	}
 
-	app := &App{Store: store}
-
-	http.Handle("/", http.HandlerFunc(homeHandler))
-	http.Handle("/form", http.HandlerFunc(searchReplyHandler))
-	http.Handle("/pets/add", http.HandlerFunc(app.serveAddPet))
-	http.Handle("/pets/add/submit", http.HandlerFunc(app.handleAddPet))
-	http.Handle("/pets", http.HandlerFunc(app.servePets))
-
-	http.ListenAndServe(":8080", nil)
-}
-
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	err := homeTmpl.Execute(w, nil)
+	handlers, err := web.NewServer(*tmplPath, store)
 	if err != nil {
-		http.Error(w, "internal server error", 500)
-		return
+		log.Fatal(err)
 	}
+
+	log.Fatal(http.ListenAndServe(*httpAddr, handlers))
 }
 
-func searchReplyHandler(w http.ResponseWriter, r *http.Request) {
-	name := r.FormValue("name")
-
-	for _, p := range pets {
-		if p.Name == name {
-			err := searchReplyTmpl.Execute(w, p)
-			if err != nil {
-				http.Error(w, "internal server error", 500)
-				return
-			}
-			return
-		}
-	}
-
-	err := searchReplyTmpl.Execute(w, "No pet found")
+func defaultTmplPath() string {
+	p, err := build.Import("github.com/psimika/secure-web-app/web", "", build.FindOnly)
 	if err != nil {
-		http.Error(w, "internal server error", 500)
-		return
+		return ""
 	}
-
+	return p.Dir
 }
-
-func (app *App) serveAddPet(w http.ResponseWriter, r *http.Request) {
-	err := addPetTmpl.Execute(w, nil)
-	if err != nil {
-		http.Error(w, "internal server error", 500)
-		return
-	}
-}
-
-func (app *App) handleAddPet(w http.ResponseWriter, r *http.Request) {
-	name := r.FormValue("name")
-	p := &petfind.Pet{Name: name}
-	if err := app.Store.AddPet(p); err != nil {
-		http.Error(w, fmt.Sprintf("Error adding pet: %q", err), http.StatusInternalServerError)
-		return
-	}
-
-	w.Write([]byte("pet added!"))
-}
-
-func (app *App) servePets(w http.ResponseWriter, r *http.Request) {
-	pets, err := app.Store.GetAllPets()
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Error getting all pets: %v", err), http.StatusInternalServerError)
-		return
-	}
-	err = showPetsTmpl.Execute(w, pets)
-	if err != nil {
-		http.Error(w, "internal server error", 500)
-		return
-	}
-}
-
-const (
-	baseTemplate = `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Secure web app</title>
-</head>
-
-<body>
-  {{block "content" .}}{{end}}
-</body>
-
-</html>`
-
-	searchTemplate = `
-{{define "content"}}
-  <form action="/form" method="GET">
-	<input name="name">
-	<input type="submit" value="Search for pet">
-  </form>
-{{end}}
-`
-	searchReplyTemplate = `
-{{define "content"}}
-  <span>Name: {{.Name}}</span>
-  <br>
-  <span>Age: {{.Age}}</span>
-{{end}}
-`
-
-	addPetTemplate = `
-{{define "content"}}
-  <form action="/pets/add/submit" method="POST">
-	<input name="name">
-	<input type="submit" value="Add new pet">
-  </form>
-{{end}}
-`
-	showPetsTemplate = `
-{{define "content"}}
-  {{range .}}
-    <li>
-      <span>ID: {{.ID}}</span>
-	  <br>
-      <span>Name: {{.Name}}</span>
-      <br>
-	  <span>Added: {{.Added}}</span>
-	</li>
-  {{end}}
-{{end}}
-`
-)

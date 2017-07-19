@@ -1,0 +1,11 @@
+{{define "content"}}
+  {{range .}}
+    <li>
+      <span>ID: {{.ID}}</span>
+	  <br>
+      <span>Name: {{.Name}}</span>
+      <br>
+	  <span>Added: {{.Added}}</span>
+	</li>
+  {{end}}
+{{end}}
