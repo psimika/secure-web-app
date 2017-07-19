@@ -10,6 +10,8 @@ type Pet struct {
 	Added time.Time
 }
 
+// Store describes the operations the application needs for persisting and
+// retrieving data.
 type Store interface {
 	AddPet(*Pet) error
 	GetAllPets() ([]Pet, error)
