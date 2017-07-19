@@ -1,5 +1,9 @@
 // +build db
 
+// Package postgres_test includes tests which only run when using the build tag
+// db (go test -tags=db) which is a good way to do integration testing as
+// proposed by Bourgon (2014):
+// http://peter.bourgon.org/go-in-production/#testing-and-validation
 package postgres_test
 
 import (

@@ -6,6 +6,8 @@ Implementation of a secure web application.
 
 Beams, C. (2014). *How to Write a Git Commit Message* [online] Available at: https://chris.beams.io/posts/git-commit/ [Accessed: June 28 2017]
 
+Bourgon, P. (2014). *Go: Best Practices for Production Environments* [online] Available at: http://peter.bourgon.org/go-in-production/#testing-and-validation [Accessed: July 18 2017]
+
 Edwards, A. (2015). *Practical Persistence in Go: Organising Database Access* [online] Available at: http://www.alexedwards.net/blog/organising-database-access [Accessed: July 18 2017]
 
 Gerrand, A. (2011). *Error handling and Go* [online] Available at: https://blog.golang.org/error-handling-and-go [Accessed: July 19 2017]
