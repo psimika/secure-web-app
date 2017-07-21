@@ -16,9 +16,11 @@ import (
 
 func main() {
 	var (
-		dataSource = flag.String("datasource", "", "the database URL")
-		httpAddr   = flag.String("http", ":8080", "HTTP address for the server to listen on")
-		tmplPath   = flag.String("tmpl", defaultTmplPath(), "path containing the application's templates")
+		dataSource   = flag.String("datasource", "", "the database URL")
+		httpAddr     = flag.String("http", ":8080", "HTTP address for the server to listen on")
+		httpsAddr    = flag.String("https", ":8443", "HTTPS address for the server to listen on")
+		tmplPath     = flag.String("tmpl", defaultTmplPath(), "path containing the application's templates")
+		insecureHTTP = flag.Bool("insecure", false, "whether to serve insecure HTTP instead of HTTPS")
 	)
 	flag.Parse()
 
@@ -38,7 +40,18 @@ func main() {
 		return
 	}
 
-	log.Fatal(http.ListenAndServe(*httpAddr, handlers))
+	if !insecureHTTP {
+		log.Fatal(http.ListenAndServe(*httpAddr, handlers))
+	} else {
+		go func() {
+			log.Printf("Serving HTTP->HTTPS redirect on %q", *httpAddr)
+			log.Fatal(http.ListenAndServe(*httpAddr, http.HandlerFunc(redirectHTTP)))
+		}()
+		// TODO: Serve TLS
+		// log.Fatal(http.ListenAndServeTLS(*httpsAddr, handlers))
+		log.Fatal(http.ListenAndServe(*httpsAddr, handlers))
+	}
+
 }
 
 func defaultTmplPath() string {
@@ -47,4 +60,12 @@ func defaultTmplPath() string {
 		return ""
 	}
 	return p.Dir
+}
+
+func redirectHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Connection", "close")
+	u := r.URL
+	u.Host = r.Host
+	u.Scheme = "https"
+	http.Redirect(w, r, u.String(), http.StatusMovedPermanently)
 }
