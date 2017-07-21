@@ -2,7 +2,25 @@
 
 Implementation of a secure web application.
 
-# References
+## Deployment
+
+In order to deploy to Heroku for the first time we need these steps:
+
+  heroku login
+
+  heroku create
+
+  heroku addons:create heroku-postgresql:hobby-dev
+
+After that and each time we make a change on master branch:
+
+  git push heroku master
+
+Or when working on a different branch:
+
+  git push heroku somebranch:master
+
+## References
 
 Beams, C. (2014). *How to Write a Git Commit Message* [online] Available at: https://chris.beams.io/posts/git-commit/ [Accessed: June 28 2017]
 
