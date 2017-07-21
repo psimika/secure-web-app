@@ -8,6 +8,7 @@ import (
 	"go/build"
 	"log"
 	"net/http"
+	"time"
 
 	_ "github.com/lib/pq"
 
@@ -41,18 +42,28 @@ func main() {
 		return
 	}
 
-	if !insecureHTTP {
+	if *insecureHTTP {
 		log.Fatal(http.ListenAndServe(*httpAddr, handlers))
 	} else {
 		go func() {
 			log.Printf("Serving HTTP->HTTPS redirect on %q", *httpAddr)
-			log.Fatal(http.ListenAndServe(*httpAddr, http.HandlerFunc(redirectHTTP)))
+			redirectServer := newRedirectServer(*httpAddr, http.HandlerFunc(redirectHTTP))
+			log.Fatal(redirectServer.ListenAndServe())
 		}()
 		// TODO: Serve TLS
 		// log.Fatal(http.ListenAndServeTLS(*httpsAddr, handlers))
 		log.Fatal(http.ListenAndServe(*httpsAddr, handlers))
 	}
 
+}
+
+func newRedirectServer(httpAddr string, redirectHandler http.Handler) *http.Server {
+	return &http.Server{
+		Addr:         httpAddr,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+		Handler:      redirectHandler,
+	}
 }
 
 func defaultTmplPath() string {
