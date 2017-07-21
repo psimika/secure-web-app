@@ -3,6 +3,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"go/build"
 	"log"
@@ -68,4 +69,32 @@ func redirectHTTP(w http.ResponseWriter, r *http.Request) {
 	u.Host = r.Host
 	u.Scheme = "https"
 	http.Redirect(w, r, u.String(), http.StatusMovedPermanently)
+}
+
+func newDefaultTLSConfig() *tls.Config {
+	// TLS configuration meant to be used by a Go server that is going to be
+	// exposed on the internet directly (Valsorda 2016):
+	// https://blog.cloudflare.com/exposing-go-on-the-internet/
+	tlsConfig := &tls.Config{
+		// Causes servers to use Go's default ciphersuite preferences,
+		// which are tuned to avoid attacks. Does nothing on clients.
+		PreferServerCipherSuites: true,
+		CurvePreferences:         []tls.CurveID{tls.CurveP256, tls.X25519},
+		MinVersion:               tls.VersionTLS12,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+
+			// Vulnerable to the Lucky13 attack.
+			// tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			// tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+		},
+		// TODO: TLS certs
+		//Certificates: []tls.Certificate{cert},
+	}
+	return tlsConfig
 }
