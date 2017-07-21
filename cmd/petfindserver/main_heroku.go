@@ -59,5 +59,28 @@ func main() {
 		return
 	}
 
-	log.Fatal(http.ListenAndServe(":"+port, handlers))
+	//log.Fatal(http.ListenAndServe(":"+port, handlers))
+	log.Fatal(http.ListenAndServe(":"+port, redirectHTTP(handlers)))
+}
+
+func setDefaultIfEmpty(defaultValue, value string) string {
+	if value == "" {
+		return defaultValue
+	}
+	return value
+}
+
+func redirectHTTP(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.TLS != nil || r.Host == "" {
+			http.NotFound(w, r)
+			return
+		}
+
+		u := r.URL
+		u.Host = r.Host
+		u.Scheme = "https"
+		http.Redirect(w, r, u.String(), http.StatusFound)
+		//h.ServeHTTP(w, r)
+	})
 }
