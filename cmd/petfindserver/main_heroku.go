@@ -36,16 +36,18 @@ import (
 func main() {
 	// Heroku uses the environment variables DATABASE_URL and PORT so that the
 	// app knows on which database to connect and on which port to listen on.
-	dataSource := os.Getenv("DATABASE_URL")
-	httpAddr := ":" + os.Getenv("PORT")
 	// Heroku deploys the application under /app.
-	tmplPath := "/app/web"
+	var (
+		databaseURL = setDefaultIfEmpty("", os.Getenv("DATABASE_URL"))
+		port        = setDefaultIfEmpty("8080", os.Getenv("PORT"))
+		tmplPath    = setDefaultIfEmpty("/app/web", os.Getenv("TMPL_PATH"))
+	)
 
-	if dataSource == "" {
+	if databaseURL == "" {
 		log.Fatal("No database URL provided, exiting...")
 	}
 
-	store, err := postgres.NewStore(dataSource)
+	store, err := postgres.NewStore(databaseURL)
 	if err != nil {
 		log.Println("NewStore failed:", err)
 		return
@@ -57,5 +59,5 @@ func main() {
 		return
 	}
 
-	log.Fatal(http.ListenAndServe(httpAddr, handlers))
+	log.Fatal(http.ListenAndServe(":"+port, handlers))
 }
