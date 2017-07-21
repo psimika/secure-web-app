@@ -5,23 +5,20 @@ Implementation of a secure web application.
 ## Deployment
 
 In order to deploy to Heroku for the first time we need these steps:
-```
-  heroku login
 
-  heroku create
+    heroku login
 
-  heroku addons:create heroku-postgresql:hobby-dev
-```
+    heroku create
+
+    heroku addons:create heroku-postgresql:hobby-dev
 
 After that and each time we make a change on master branch:
-```
-  git push heroku master
-```
+
+    git push heroku master
 
 Or when working on a different branch:
-```
-  git push heroku somebranch:master
-```
+
+    git push heroku somebranch:master
 
 ## References
 

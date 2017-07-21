@@ -19,19 +19,19 @@ import (
 //
 // In order to deploy to Heroku for the first time we need these steps:
 //
-//   heroku login
+//     heroku login
 //
-//   heroku create
+//     heroku create
 //
-//   heroku addons:create heroku-postgresql:hobby-dev
+//     heroku addons:create heroku-postgresql:hobby-dev
 //
 // After that and each time we make a change on master branch:
 //
-//   git push heroku master
+//     git push heroku master
 //
 // Or when working on a different branch:
 //
-//   git push heroku somebranch:master
+//     git push heroku somebranch:master
 
 func main() {
 	// Heroku uses the environment variables DATABASE_URL and PORT so that the
