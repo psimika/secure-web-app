@@ -1,3 +1,5 @@
+// +build !heroku
+
 package main
 
 import (
@@ -32,7 +34,8 @@ func main() {
 
 	handlers, err := web.NewServer(*tmplPath, store)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("NewServer failed:", err)
+		return
 	}
 
 	log.Fatal(http.ListenAndServe(*httpAddr, handlers))
