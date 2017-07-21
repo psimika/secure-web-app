@@ -72,16 +72,14 @@ func setDefaultIfEmpty(defaultValue, value string) string {
 
 func redirectHTTP(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("heroku forwarded port:", r.Header.Get("X-Forwarded-Port"))
-		if r.TLS != nil || r.Host == "" {
-			http.NotFound(w, r)
+		if r.Header.Get("X-Forwarded-Proto") == "http" {
+			w.Header().Set("Connection", "close")
+			u := r.URL
+			u.Host = r.Host
+			u.Scheme = "https"
+			http.Redirect(w, r, u.String(), http.StatusMovedPermanently)
 			return
 		}
-
-		u := r.URL
-		u.Host = r.Host
-		u.Scheme = "https"
-		http.Redirect(w, r, u.String(), http.StatusFound)
-		//h.ServeHTTP(w, r)
+		h.ServeHTTP(w, r)
 	})
 }
