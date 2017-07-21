@@ -51,7 +51,7 @@ func main() {
 		return
 	}
 
-	handlers, err := web.NewServer(tmplPath, store)
+	handlers, err := web.NewServer(tmplPath, store, true)
 	if err != nil {
 		log.Println("NewServer failed:", err)
 		return
