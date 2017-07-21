@@ -2,6 +2,26 @@
 
 Implementation of a secure web application.
 
+## Development
+
+### Heroku local
+
+Create a .env.local file with the following key value pairs:
+
+    DATABASE_URL="user=<db user> password=<db password> dbname=petfind"
+    TMPL_PATH="web"
+    PORT="8080"
+
+Then install and run with:
+
+    go install -tags=heroku ./... && heroku local -e .env.local
+
+Alternatively, in order to run the heroku version without using the heroku command:
+
+    go install -tags=heroku ./...
+
+    TMPL_PATH=web PORT=8080 DATABASE_URL="user=<db user> password=<db password> database=petfind" petfindserver
+
 ## Deployment
 
 In order to deploy to Heroku for the first time we need these steps:
