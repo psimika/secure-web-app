@@ -4,7 +4,7 @@ Implementation of a secure web application.
 
 ## Development
 
-### Heroku local
+### Running the app locally using Heroku
 
 Create a .env.local file with the following key value pairs:
 
