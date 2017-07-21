@@ -59,7 +59,6 @@ func main() {
 		return
 	}
 
-	//log.Fatal(http.ListenAndServe(":"+port, handlers))
 	log.Fatal(http.ListenAndServe(":"+port, redirectHTTP(handlers)))
 }
 

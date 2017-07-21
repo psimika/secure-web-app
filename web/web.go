@@ -99,12 +99,6 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// https://www.owasp.org/index.php/HTTP_Strict_Transport_Security_Cheat_Sheet
 		w.Header().Set("Strict-Transport-Security", "max-age=86400; includeSubDomains")
 	}
-	//if r.Header.Get("X-Forwarded-Proto") == "http" && s.secureRedirect || r.TLS != nil && s.secureRedirect {
-	//	w.Header().Set("Connection", "close")
-	//	url := "https://" + r.Host + r.URL.String()
-	//	http.Redirect(w, r, url, http.StatusMovedPermanently)
-	//	return
-	//}
 	s.handlers.ServeHTTP(w, r)
 }
 
