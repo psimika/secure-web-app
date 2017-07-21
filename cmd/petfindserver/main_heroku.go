@@ -72,6 +72,7 @@ func setDefaultIfEmpty(defaultValue, value string) string {
 
 func redirectHTTP(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Println("heroku forwarded port:", r.Header.Get("X-Forwarded-Port"))
 		if r.TLS != nil || r.Host == "" {
 			http.NotFound(w, r)
 			return
