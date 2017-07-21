@@ -22,7 +22,7 @@ func main() {
 	tmplPath := "/app/web"
 
 	if dataSource == "" {
-		log.Fatal("No database datasource provided, exiting...")
+		log.Fatal("No database URL provided, exiting...")
 	}
 
 	store, err := postgres.NewStore(dataSource)
