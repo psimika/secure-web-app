@@ -71,6 +71,13 @@ func setDefaultIfEmpty(defaultValue, value string) string {
 
 func redirectHTTP(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Heroku's HTTP routing passes requests to our app and uses the
+		// X-Forwarded-Proto header to carry the information about the
+		// originating protocol of the HTTP request. Here we check that header
+		// and if the original request was HTTP we perform a redirect to HTTPS
+		// (Heroku Dev Center 2017):
+		//
+		// https://devcenter.heroku.com/articles/http-routing#heroku-headers
 		if r.Header.Get("X-Forwarded-Proto") == "http" {
 			w.Header().Set("Connection", "close")
 			u := r.URL
