@@ -81,7 +81,7 @@ than 1024. In order for the system to allow `petfindserver` to listen to ports
     sudo setcap 'cap_net_bind_service=+ep' /home/petfind/petfindserver
 
 Ubuntu 16.04 uses Systemd for managing services. We need a Systemd file that
-describes our service. We create a `[petfind.service](doc/petfind.service)`
+describes our service. We create a [`petfind.service`](doc/petfind.service)
 file in `/etc/systemd/system/` which looks like this:
 
     [Unit]
