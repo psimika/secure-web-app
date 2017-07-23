@@ -1,0 +1,25 @@
+[Unit]
+Description=petfind server
+ConditionPathExists=/home/petfind
+After=network.target
+
+[Service]
+Type=simple
+User=petfind
+Group=petfind
+Restart=always
+RestartSec=10
+StartLimitIntervalSec=60
+WorkingDirectory=/home/petfind
+
+# Automatic Let's Encrypt certificates example
+ExecStart=/home/petfind/petfindserver -http=:80 -https=:443 -tmpl=/home/petfind -datasource="user=petfind password=<db password> dbname=petfind" -autocert=petfind.example.com -autocertdir=/home/petfind/letscache
+
+# Provided certificates example
+# ExecStart=/home/petfind/petfindserver -http=:80 -https=:443 -tmpl=/home/petfind -datasource="user=petfind password=<db password> dbname=petfind" -tlscert=/home/petfind/cert.pem -tlskey=/home/petfind/key.pem
+
+# Insecure Example
+# ExecStart=/home/petfind/petfindserver -http=:80 -tmpl=/home/petfind -datasource="user=petfind password=<db password> dbname=petfind" -insecure
+
+[Install]
+WantedBy=multi-user.target
