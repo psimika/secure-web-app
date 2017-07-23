@@ -60,6 +60,8 @@ Johnson, B. (2014). *Structuring Applications in Go* [online] Available at: http
 
 Johnson, B. (2016). *Standard Package Layout* [online] Available at: https://medium.com/@benbjohnson/standard-package-layout-7cdbc8391fc1 [Accessed: July 18 2017]
 
+Lee, F. (2017). *GoLang: Running a Go binary as a systemd service on Ubuntu 16.04* [online] Available at: https://fabianlee.org/2017/05/21/golang-running-a-go-binary-as-a-systemd-service-on-ubuntu-16-04/ [Accessed: July 23 2017]
+
 OWASP (2017). *HTTP Strict Transport Security Cheat Sheet* [online] Available at: https://www.owasp.org/index.php/HTTP_Strict_Transport_Security_Cheat_Sheet [Accessed: July 19 2017]
 
 Pike, R. (2013). *The cover story* [online] Available at: https://blog.golang.org/cover [Accessed: July 18 2017]
