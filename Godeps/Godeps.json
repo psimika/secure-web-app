@@ -15,6 +15,14 @@
 			"ImportPath": "github.com/lib/pq/oid",
 			"Comment": "go1.0-cutoff-173-gdd1fe20",
 			"Rev": "dd1fe2071026ce53f36a39112e645b4d4f5793a4"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/acme",
+			"Rev": "6914964337150723782436d56b3f21610a74ce7b"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/acme/autocert",
+			"Rev": "6914964337150723782436d56b3f21610a74ce7b"
 		}
 	]
 }
