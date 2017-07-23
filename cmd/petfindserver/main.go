@@ -27,6 +27,7 @@ func main() {
 		certFile      = flag.String("tlscert", "", "TLS public key in PEM format used together with -tlskey")
 		keyFile       = flag.String("tlskey", "", "TLS private key in PEM format used together with -tlscert")
 		autocertHosts = flag.String("autocert", "", "One or more host names separated by space to get Let's Encrypt certificates automatically")
+		autocertCache = flag.String("autocertdir", "", "directory to cache the Let's Encrypt certificates.")
 	)
 	flag.Parse()
 	if !*insecureHTTP && *autocertHosts == "" && (*certFile == "" || *keyFile == "") {
@@ -66,7 +67,10 @@ func main() {
 	if *autocertHosts != "" {
 		hosts := strings.Split(*autocertHosts, " ")
 		log.Printf("Serving HTTPS on %q using Let's Encrypt certificates for %v", *httpsAddr, hosts)
-		log.Fatal(https.ListenAndServeAutocert(*httpsAddr, hosts, appHandlers))
+		if *autocertCache != "" {
+			log.Printf("Caching Let's Encrypt certificates in %v", *autocertCache)
+		}
+		log.Fatal(https.ListenAndServeAutocert(*httpsAddr, *autocertCache, hosts, appHandlers))
 	}
 
 	log.Printf("Serving HTTPS on %q using provided certificates", *httpsAddr)

@@ -5,14 +5,21 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"golang.org/x/crypto/acme/autocert"
 )
 
-func ListenAndServeAutocert(httpsAddr string, hosts []string, appHandlers http.Handler) error {
+func ListenAndServeAutocert(httpsAddr, cachePath string, hosts []string, appHandlers http.Handler) error {
 	var m autocert.Manager
 	m.Prompt = autocert.AcceptTOS
+	if cachePath != "" {
+		if err := os.MkdirAll(cachePath, 0700); err != nil {
+			return fmt.Errorf("could not create or read Let's Encrypt cache directory: %v", err)
+		}
+		m.Cache = autocert.DirCache(cachePath)
+	}
 	if len(hosts) > 0 {
 		m.HostPolicy = autocert.HostWhitelist(hosts...)
 	}
