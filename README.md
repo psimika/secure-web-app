@@ -44,11 +44,11 @@ Or when working on a different branch:
 
 ### On a Linux server (Ubuntu 16.04 example)
 
-First we connect to the server and create a `petfind` account:
+First we connect to the server and create a `petfind` account (Anicas 2016):
 
     sudo adduser petfind
 
-And we install PostgreSQL:
+And we install PostgreSQL (Ellingwood 2016):
 
     sudo apt-get install postgresql postgresql-contrib
 
@@ -149,11 +149,15 @@ started serving:
 
 ## References
 
+Anicas, M. (2016). *Initial Server Setup with Ubuntu 16.04* [online] Available at: https://www.digitalocean.com/community/tutorials/initial-server-setup-with-ubuntu-16-04 [Accessed: July 23 2017]
+
 Beams, C. (2014). *How to Write a Git Commit Message* [online] Available at: https://chris.beams.io/posts/git-commit/ [Accessed: June 28 2017]
 
 Bourgon, P. (2014). *Go: Best Practices for Production Environments* [online] Available at: http://peter.bourgon.org/go-in-production/#testing-and-validation [Accessed: July 18 2017]
 
 Edwards, A. (2015). *Practical Persistence in Go: Organising Database Access* [online] Available at: http://www.alexedwards.net/blog/organising-database-access [Accessed: July 18 2017]
+
+Ellingwood, J. (2016). *How To Install and Use PostgreSQL on Ubuntu 16.04* [online] Available at: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-postgresql-on-ubuntu-16-04 [Accessed: July 23 2017]
 
 Gerrand, A. (2011a). *Error handling and Go* [online] Available at: https://blog.golang.org/error-handling-and-go [Accessed: July 19 2017]
 
