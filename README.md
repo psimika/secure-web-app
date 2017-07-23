@@ -24,6 +24,8 @@ Alternatively, in order to run the heroku version without using the heroku comma
 
 ## Deployment
 
+### On Heroku
+
 In order to deploy to Heroku for the first time we need these steps:
 
     heroku login
@@ -39,6 +41,111 @@ After that and each time we make a change on master branch:
 Or when working on a different branch:
 
     git push heroku somebranch:master
+
+### On a Linux server (Ubuntu 16.04 example)
+
+First we connect to the server and create a `petfind` account:
+
+    sudo adduser petfind
+
+And we install PostgreSQL:
+
+    sudo apt-get install postgresql postgresql-contrib
+
+Then we create a PostgreSQL user and database `petfind`. There is no need for
+the database user to be a superuser or have other priviledges.
+
+    sudo -u postgres createuser --interactive
+    sudo -u postgres createdb petfind
+
+We may also want to add a password to the database user. First we connect to
+PostgreSQL with:
+
+    sudo -u postgres psql
+
+Then we alter the user so that it has a password by using the following SQL
+statement:
+
+    ALTER USER petfind WITH password '<db password>';
+
+We upload the `petfindserver` binary to the server in `/home/petfind`. The
+application's templates that exist under the code's `web/templates` should also
+be uploaded in `/home/petfind/templates`. If we are planning to provide our own
+SSL certificates, they should also be uploaded in `/home/petfind`.
+
+Normally it is not allowed for programs to access system ports than are less
+than 1024. In order for the system to allow `petfindserver` to listen to ports
+`80` and `443` which are less than 1024, we need to give it special permissions
+(Lee 2017).
+
+    sudo setcap 'cap_net_bind_service=+ep' /home/petfind/petfindserver
+
+Ubuntu 16.04 uses Systemd for managing services. We need a Systemd file that
+describes our service. We create a `[petfind.service](doc/petfind.service)`
+file in `/etc/systemd/system/` which looks like this:
+
+    [Unit]
+    Description=petfind server
+    ConditionPathExists=/home/petfind
+    After=network.target
+
+    [Service]
+    Type=simple
+    User=petfind
+    Group=petfind
+    Restart=always
+    RestartSec=10
+    StartLimitIntervalSec=60
+    WorkingDirectory=/home/petfind
+
+    # Automatic Let's Encrypt certificates example
+    ExecStart=/home/petfind/petfindserver -http=:80 -https=:443 -tmpl=/home/petfind -datasource="user=petfind password=<db password> dbname=petfind" -autocert=petfind.example.com -autocertdir=/home/petfind/letscache
+
+    # Provided certificates example
+    # ExecStart=/home/petfind/petfindserver -http=:80 -https=:443 -tmpl=/home/petfind -datasource="user=petfind password=<db password> dbname=petfind" -tlscert=/home/petfind/cert.pem -tlskey=/home/petfind/key.pem
+
+    # Insecure Example
+    # ExecStart=/home/petfind/petfindserver -http=:80 -tmpl=/home/petfind -datasource="user=petfind password=<db password> dbname=petfind" -insecure
+
+    [Install]
+    WantedBy=multi-user.target
+
+The above file contains three examples of flag usage for the application. Only
+one of them should be left uncommented depending on how we wish to run the
+application.
+
+The application supports fetching Let's Encrypt certificates automatically for
+one or more domains. For this case we use the flag `-autocert="<domains>"` and
+we provide one or more domains (separated by spaces) so for example if the
+server's domain is petfind.example.com we provide that as a value. It is
+recommended to cache the Let's Encrypt certificates somewhere otherwise the
+application will have to request them again when it restarts. For this case we
+provide a folder for the certificates to be cached with the flag
+`-autocertdir=/home/petfind/letscache`.
+
+If we wish to provide our own certificates, we instead use the flags `-tlscert`
+and `-tlskey` providing the public and private keys respectively in PEM format.
+
+As a last option, there is the `-insecure` flag which forces the application to
+only serve insecure HTTP instead of HTTPS.
+
+After we are done, we can enable the service with:
+
+    sudo systemctl enable petfind.service
+
+If we make any changes to the service file we need to use:
+
+    sudo systemctl daemon-reload
+
+We can start and stop the service with:
+
+    sudo systemctl start petfind.service
+    sudo systemctl stop petfind.service
+
+Finally we can inspect the logs to make sure that the petfind server has
+started serving:
+
+    sudo tail -f /var/log/syslog
 
 ## References
 
