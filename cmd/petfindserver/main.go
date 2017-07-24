@@ -55,6 +55,7 @@ func main() {
 	}
 
 	if *insecureHTTP {
+		log.Printf("Serving insecure HTTP on %q", *httpAddr)
 		log.Fatal(http.ListenAndServe(*httpAddr, appHandlers))
 	}
 
