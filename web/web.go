@@ -38,11 +38,10 @@ func (fn handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // server is the application's HTTP server.
 type server struct {
-	handlers       http.Handler
-	mux            *http.ServeMux
-	store          petfind.Store
-	tmpl           *tmpl
-	secureRedirect bool
+	handlers http.Handler
+	mux      *http.ServeMux
+	store    petfind.Store
+	tmpl     *tmpl
 }
 
 // tmpl contains the server's templates required to render its pages.
@@ -54,12 +53,12 @@ type tmpl struct {
 }
 
 // NewServer initializes and returns a new HTTP server.
-func NewServer(templatePath string, store petfind.Store, secureRedirect bool) (http.Handler, error) {
+func NewServer(templatePath string, store petfind.Store) (http.Handler, error) {
 	t, err := parseTemplates(filepath.Join(templatePath, "templates"))
 	if err != nil {
 		return nil, fmt.Errorf("error parsing templates: %v", err)
 	}
-	s := &server{mux: http.NewServeMux(), store: store, tmpl: t, secureRedirect: secureRedirect}
+	s := &server{mux: http.NewServeMux(), store: store, tmpl: t}
 	s.handlers = s.mux
 	s.mux.Handle("/", handler(s.homeHandler))
 	s.mux.Handle("/form", handler(s.searchReplyHandler))
