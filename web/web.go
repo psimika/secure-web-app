@@ -143,6 +143,9 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.handlers.ServeHTTP(w, r)
 }
 
+// stateWhitelist is used to store any generated oauth state token in memory.
+// Only the ones that exist in the whitelist will be accepted and once they are
+// used they are deleted in order to mitigate replay attacks.
 type stateWhitelist struct {
 	mu sync.Mutex
 	m  map[string]bool
