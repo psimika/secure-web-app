@@ -1,0 +1,8 @@
+{{define "content"}}
+  <form method="POST" action="/login">
+    <input type="text" name="username" placeholder="Username">
+    <input type="password" name="password" placeholder="Password">
+    <input type="submit" value="Login">
+    <a href="/login/github">Login with GitHub</a>
+  <form>
+{{end}}

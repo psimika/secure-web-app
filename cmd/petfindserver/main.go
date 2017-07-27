@@ -17,17 +17,22 @@ import (
 	"github.com/psimika/secure-web-app/web"
 )
 
+const defaultSessionMinutes = 30
+
 func main() {
 	var (
-		dataSource    = flag.String("datasource", "", "the database URL")
-		httpAddr      = flag.String("http", ":8080", "HTTP address for the server to listen on")
-		httpsAddr     = flag.String("https", ":8443", "HTTPS address for the server to listen on")
-		tmplPath      = flag.String("tmpl", defaultTmplPath(), "path containing the application's templates")
-		insecureHTTP  = flag.Bool("insecure", false, "whether to serve insecure HTTP instead of HTTPS")
-		certFile      = flag.String("tlscert", "", "TLS public key in PEM format used together with -tlskey")
-		keyFile       = flag.String("tlskey", "", "TLS private key in PEM format used together with -tlscert")
-		autocertHosts = flag.String("autocert", "", "One or more host names separated by space to get Let's Encrypt certificates automatically")
-		autocertCache = flag.String("autocertdir", "", "directory to cache the Let's Encrypt certificates.")
+		dataSource     = flag.String("datasource", "", "the database URL")
+		httpAddr       = flag.String("http", ":8080", "HTTP address for the server to listen on")
+		httpsAddr      = flag.String("https", ":8443", "HTTPS address for the server to listen on")
+		tmplPath       = flag.String("tmpl", defaultTmplPath(), "path containing the application's templates")
+		insecureHTTP   = flag.Bool("insecure", false, "whether to serve insecure HTTP instead of HTTPS")
+		certFile       = flag.String("tlscert", "", "TLS public key in PEM format used together with -tlskey")
+		keyFile        = flag.String("tlskey", "", "TLS private key in PEM format used together with -tlscert")
+		autocertHosts  = flag.String("autocert", "", "one or more host names separated by space to get Let's Encrypt certificates automatically")
+		autocertCache  = flag.String("autocertdir", "", "directory to cache the Let's Encrypt certificates")
+		githubID       = flag.String("githubid", "", "GitHub Client ID used for Login with GitHub")
+		githubSecret   = flag.String("githubsecret", "", "GitHub Client Secret used for Login with GitHub")
+		sessionMinutes = flag.Int("sessionmins", defaultSessionMinutes, "`minutes` that the server's sessions will remain valid")
 	)
 	flag.Parse()
 	if !*insecureHTTP && *autocertHosts == "" && (*certFile == "" || *keyFile == "") {
@@ -48,7 +53,7 @@ func main() {
 		return
 	}
 
-	appHandlers, err := web.NewServer(*tmplPath, store)
+	appHandlers, err := web.NewServer(store, *tmplPath, *githubID, *githubSecret, time.Duration(*sessionMinutes)*time.Minute)
 	if err != nil {
 		log.Println("NewServer failed:", err)
 		return

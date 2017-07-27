@@ -1,6 +1,12 @@
 {{define "content"}}
+  {{if .}}
+    Hello {{.Name}}
+    <form method="POST" action="/logout">
+      <input type="submit" value="Logout">
+    </form>
+  {{end}}
   <form action="/pets/add/submit" method="POST">
-	<input name="name">
-	<input type="submit" value="Add new pet">
+	  <input name="name">
+	  <input type="submit" value="Add new pet">
   </form>
 {{end}}
