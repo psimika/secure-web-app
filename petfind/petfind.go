@@ -46,3 +46,8 @@ type Session struct {
 	UserID int64
 	Added  time.Time
 }
+
+// TODO(psimika): Useful article in case a custom type needs to be stored in
+// the database:
+//
+// https://husobee.github.io/golang/database/2015/06/12/scanner-valuer.html
