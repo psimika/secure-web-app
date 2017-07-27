@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 
 	_ "github.com/lib/pq"
 
@@ -38,9 +40,12 @@ func main() {
 	// app knows on which database to connect and on which port to listen on.
 	// Heroku deploys the application under /app.
 	var (
-		databaseURL = setDefaultIfEmpty("", os.Getenv("DATABASE_URL"))
-		port        = setDefaultIfEmpty("8080", os.Getenv("PORT"))
-		tmplPath    = setDefaultIfEmpty("/app/web", os.Getenv("TMPL_PATH"))
+		databaseURL  = getenvString("", "DATABASE_URL")
+		port         = getenvString("8080", "PORT")
+		tmplPath     = getenvString("/app/web", "TMPL_PATH")
+		githubID     = getenvString("", "GITHUB_ID")
+		githubSecret = getenvString("", "GITHUB_SECRET")
+		sessionMins  = getenvInt(30, "SESSION_MINS")
 	)
 
 	if databaseURL == "" {
@@ -53,7 +58,7 @@ func main() {
 		return
 	}
 
-	handlers, err := web.NewServer(tmplPath, store)
+	handlers, err := web.NewServer(store, tmplPath, githubID, githubSecret, time.Duration(sessionMins)*time.Minute)
 	if err != nil {
 		log.Println("NewServer failed:", err)
 		return
@@ -62,11 +67,24 @@ func main() {
 	log.Fatal(http.ListenAndServe(":"+port, redirectHTTP(handlers)))
 }
 
-func setDefaultIfEmpty(defaultValue, value string) string {
+func getenvString(defaultValue, envName string) string {
+	value := os.Getenv(envName)
 	if value == "" {
 		return defaultValue
 	}
 	return value
+}
+
+func getenvInt(defaultValue int, envName string) int {
+	value := os.Getenv(envName)
+	if value == "" {
+		return defaultValue
+	}
+	i, err := strconv.Atoi(value)
+	if err != nil {
+		return defaultValue
+	}
+	return i
 }
 
 func redirectHTTP(h http.Handler) http.Handler {
