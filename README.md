@@ -44,7 +44,13 @@ Or when working on a different branch:
 
 ### On a Linux server (Ubuntu 16.04 example)
 
-First we connect to the server and create a `petfind` account (Anicas 2016):
+First we connect to the server and we might want to create a new account with
+sudo privileges as described by Anicas
+([2016](https://www.digitalocean.com/community/tutorials/initial-server-setup-with-ubuntu-16-04))
+to perform the rest of the operations.
+
+Next, we create a dedicated `petfind` account for the sole purpose of running
+the application:
 
     sudo adduser petfind
 
@@ -53,7 +59,7 @@ And we install PostgreSQL (Ellingwood 2016):
     sudo apt-get update && sudo apt-get install postgresql postgresql-contrib
 
 Then we create a PostgreSQL user and database `petfind`. There is no need for
-the database user to be a superuser or have other priviledges.
+the database user to be a superuser or have other privileges.
 
     sudo -u postgres createuser --interactive
     sudo -u postgres createdb petfind
