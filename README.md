@@ -161,6 +161,8 @@ Beams, C. (2014). *How to Write a Git Commit Message* [online] Available at: htt
 
 Bourgon, P. (2014). *Go: Best Practices for Production Environments* [online] Available at: http://peter.bourgon.org/go-in-production/#testing-and-validation [Accessed: July 18 2017]
 
+Caserta, P. (2015). *Go (Golang) OAuth for Facebook, Github, Twitter and Google Plus* [online] Available at: http://pierrecaserta.com/go-oauth-facebook-github-twitter-google-plus/ [Accessed: July 25 2017]
+
 Edwards, A. (2015). *Practical Persistence in Go: Organising Database Access* [online] Available at: http://www.alexedwards.net/blog/organising-database-access [Accessed: July 18 2017]
 
 Ellingwood, J. (2016). *How To Install and Use PostgreSQL on Ubuntu 16.04* [online] Available at: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-postgresql-on-ubuntu-16-04 [Accessed: July 23 2017]
