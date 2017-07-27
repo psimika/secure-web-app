@@ -174,14 +174,7 @@ func (w *stateWhitelist) Delete(key string) {
 }
 
 func (s *server) homeHandler(w http.ResponseWriter, r *http.Request) *Error {
-
-	user, ok := fromContextGetUser(r.Context())
-	log.Println("context user:", user, ok)
-	sessionID, ok := fromContextGetSessionID(r.Context())
-	log.Println("context sessionID:", sessionID, ok)
-
-	err := s.tmpl.home.Execute(w, nil)
-	if err != nil {
+	if err := s.tmpl.home.Execute(w, nil); err != nil {
 		return E(err, "could not serve home", http.StatusInternalServerError)
 	}
 	return nil
