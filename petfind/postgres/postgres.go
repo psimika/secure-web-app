@@ -27,13 +27,43 @@ func NewStore(datasource string) (petfind.Store, error) {
 }
 
 func (db *store) MakeSchema() error {
-	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS pets (id serial PRIMARY KEY, name varchar(50), added timestamp)"); err != nil {
+	const pets = `CREATE TABLE IF NOT EXISTS pets (
+		id bigserial PRIMARY KEY,
+		name varchar(70),
+		added timestamp
+	)`
+	if _, err := db.Exec(pets); err != nil {
 		return fmt.Errorf("error creating table pets: %v", err)
+	}
+	const users = `CREATE TABLE IF NOT EXISTS users (
+		id bigserial PRIMARY KEY,
+		github_id bigint,
+		name varchar(70),
+		login varchar(70),
+		email varchar(70),
+		added timestamp
+	)`
+	if _, err := db.Exec(users); err != nil {
+		return fmt.Errorf("error creating table users: %v", err)
+	}
+	const sessions = `CREATE TABLE IF NOT EXISTS sessions (
+		id varchar(50) PRIMARY KEY,
+		user_id int REFERENCES users (id),
+		added timestamp
+	)`
+	if _, err := db.Exec(sessions); err != nil {
+		return fmt.Errorf("error creating table sessions: %v", err)
 	}
 	return nil
 }
 
 func (db *store) DropSchema() error {
+	if _, err := db.Exec("DROP TABLE sessions"); err != nil {
+		return fmt.Errorf("error dropping table sessions: %v", err)
+	}
+	if _, err := db.Exec("DROP TABLE users"); err != nil {
+		return fmt.Errorf("error dropping table users: %v", err)
+	}
 	if _, err := db.Exec("DROP TABLE pets"); err != nil {
 		return fmt.Errorf("error dropping table pets: %v", err)
 	}
