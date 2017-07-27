@@ -183,7 +183,9 @@ Johnson, B. (2016). *Standard Package Layout* [online] Available at: https://med
 
 Lee, F. (2017). *GoLang: Running a Go binary as a systemd service on Ubuntu 16.04* [online] Available at: https://fabianlee.org/2017/05/21/golang-running-a-go-binary-as-a-systemd-service-on-ubuntu-16-04/ [Accessed: July 23 2017]
 
-OWASP (2017). *HTTP Strict Transport Security Cheat Sheet* [online] Available at: https://www.owasp.org/index.php/HTTP_Strict_Transport_Security_Cheat_Sheet [Accessed: July 19 2017]
+OWASP (2017a). *HTTP Strict Transport Security Cheat Sheet* [online] Available at: https://www.owasp.org/index.php/HTTP_Strict_Transport_Security_Cheat_Sheet [Accessed: July 19 2017]
+
+OWASP (2017b). *Session Management Cheat Sheet* [online] Available at: https://www.owasp.org/index.php/Session_Management_Cheat_Sheet [Accessed: July 26 2017]
 
 Pike, R. (2013). *The cover story* [online] Available at: https://blog.golang.org/cover [Accessed: July 18 2017]
 

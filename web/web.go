@@ -136,7 +136,7 @@ func parseTemplates(dir string) (*tmpl, error) {
 // ServeHTTP satisfies the http.Handler interface for a server.
 func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
-		// HSTS header suggested by OWASP (2017) to address certain threats:
+		// HSTS header suggested by OWASP (2017a) to address certain threats:
 		// https://www.owasp.org/index.php/HTTP_Strict_Transport_Security_Cheat_Sheet
 		w.Header().Set("Strict-Transport-Security", "max-age=86400; includeSubDomains")
 	}
