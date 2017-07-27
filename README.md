@@ -50,7 +50,7 @@ First we connect to the server and create a `petfind` account (Anicas 2016):
 
 And we install PostgreSQL (Ellingwood 2016):
 
-    sudo apt-get install postgresql postgresql-contrib
+    sudo apt-get update && sudo apt-get install postgresql postgresql-contrib
 
 Then we create a PostgreSQL user and database `petfind`. There is no need for
 the database user to be a superuser or have other priviledges.
