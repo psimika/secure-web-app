@@ -155,6 +155,8 @@ started serving:
 
 ## References
 
+Ajmani, S. (2014). *Go Concurrency Patterns: Context* [online] Available at: https://blog.golang.org/context [Accessed: July 26 2017]
+
 Anicas, M. (2016). *Initial Server Setup with Ubuntu 16.04* [online] Available at: https://www.digitalocean.com/community/tutorials/initial-server-setup-with-ubuntu-16-04 [Accessed: July 23 2017]
 
 Beams, C. (2014). *How to Write a Git Commit Message* [online] Available at: https://chris.beams.io/posts/git-commit/ [Accessed: June 28 2017]
