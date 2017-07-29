@@ -79,7 +79,8 @@ func newContextWithSessionID(ctx context.Context, sessionID string) context.Cont
 const (
 	sessionCookieName   = "petfind_session"
 	oauthStateTokenSize = 32
-	// OWASP (2017b) recommends at least 16 bytes:
+	// OWASP (2017b) recommends a session ID length of at least 16 bytes to
+	// prevent brute force attacks:
 	//
 	// https://www.owasp.org/index.php/Session_Management_Cheat_Sheet#Session_ID_Length
 	sessionIDSize = 32

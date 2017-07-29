@@ -103,10 +103,10 @@ func defaultTmplPath() string {
 func redirectHTTP(w http.ResponseWriter, r *http.Request) {
 	// TODO(psimika): Research how safe is redirect.
 	//
-	// OWASP says: "Web applications should avoid the extremely common HTTP to
-	// HTTPS redirection on the home page (using a 30x HTTP response), as this
-	// single unprotected HTTP request/response exchange can be used by an
-	// attacker to gather (or fix) a valid session ID."
+	// According to OWASP: "Web applications should avoid the extremely common
+	// HTTP to HTTPS redirection on the home page (using a 30x HTTP response),
+	// as this single unprotected HTTP request/response exchange can be used by
+	// an attacker to gather (or fix) a valid session ID."
 	//
 	// https://www.owasp.org/index.php/Session_Management_Cheat_Sheet#Transport_Layer_Security
 	w.Header().Set("Connection", "close")
