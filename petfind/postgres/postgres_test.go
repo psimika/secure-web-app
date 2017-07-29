@@ -11,12 +11,14 @@ import (
 	"fmt"
 	"testing"
 
+	_ "github.com/lib/pq"
+
 	"github.com/psimika/secure-web-app/petfind"
 	"github.com/psimika/secure-web-app/petfind/postgres"
 )
 
 var (
-	user   = flag.String("user", "psimika", "username to use to run tests on Postgres")
+	user   = flag.String("user", "petfind", "username to use to run tests on Postgres")
 	pass   = flag.String("pass", "", "password to use to run tests on Postgres")
 	host   = flag.String("host", "localhost", "host for connecting to Postgres and run the tests")
 	port   = flag.String("port", "5432", "port for connecting to Postgres and run the tests")
