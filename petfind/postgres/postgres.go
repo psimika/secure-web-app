@@ -49,7 +49,8 @@ func (db *store) MakeSchema() error {
 	const sessions = `CREATE TABLE IF NOT EXISTS sessions (
 		id varchar(50) PRIMARY KEY,
 		user_id int REFERENCES users (id),
-		added timestamp
+		added timestamp,
+		expires timestamp
 	)`
 	if _, err := db.Exec(sessions); err != nil {
 		return fmt.Errorf("error creating table sessions: %v", err)

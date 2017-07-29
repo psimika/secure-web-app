@@ -1,16 +1,13 @@
 package postgres
 
 import (
-	"time"
-
 	"github.com/psimika/secure-web-app/petfind"
 )
 
 func (db *store) CreateUserSession(s *petfind.Session) error {
 	const sessionInsertStmt = `
-	INSERT INTO sessions(id, user_id, added)
-	VALUES ($1, $2, now())
-	RETURNING added
+	INSERT INTO sessions(id, user_id, added, expires)
+	VALUES ($1, $2, $3, $4)
 	`
 	stmt, err := db.Prepare(sessionInsertStmt)
 	if err != nil {
@@ -22,12 +19,10 @@ func (db *store) CreateUserSession(s *petfind.Session) error {
 			return
 		}
 	}()
-	var added time.Time
-	err = stmt.QueryRow(s.ID, s.UserID).Scan(&added)
+	_, err = stmt.Exec(s.ID, s.UserID, s.Added, s.Expires)
 	if err != nil {
 		return err
 	}
-	s.Added = added
 	return nil
 }
 

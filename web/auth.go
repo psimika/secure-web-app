@@ -237,7 +237,13 @@ func (s *server) loginGithubUser(w http.ResponseWriter, r *http.Request, githubU
 	if key == nil {
 		return E(err, "could not generate session ID", http.StatusInternalServerError)
 	}
-	session := &petfind.Session{ID: base64.URLEncoding.EncodeToString(key), UserID: user.ID}
+	now := time.Now()
+	session := &petfind.Session{
+		ID:      base64.URLEncoding.EncodeToString(key),
+		UserID:  user.ID,
+		Added:   now,
+		Expires: now.Add(s.sessionDuration),
+	}
 	if err := s.store.CreateUserSession(session); err != nil {
 		return E(err, "could not create session", http.StatusInternalServerError)
 	}
@@ -248,7 +254,7 @@ func (s *server) loginGithubUser(w http.ResponseWriter, r *http.Request, githubU
 		Path:     "/",
 		Secure:   true,
 		HttpOnly: true,
-		Expires:  time.Now().Add(s.sessionDuration),
+		Expires:  now.Add(s.sessionDuration),
 	}
 	http.SetCookie(w, sessionCookie)
 	return nil

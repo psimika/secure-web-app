@@ -42,9 +42,10 @@ type User struct {
 }
 
 type Session struct {
-	ID     string
-	UserID int64
-	Added  time.Time
+	ID      string
+	UserID  int64
+	Added   time.Time
+	Expires time.Time
 }
 
 // TODO(psimika): Useful article in case a custom type needs to be stored in

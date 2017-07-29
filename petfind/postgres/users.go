@@ -76,6 +76,7 @@ func (db *store) GetUserBySessionID(sessionID string) (*petfind.User, error) {
 	FROM sessions s
 	  JOIN users u ON s.user_id = u.id
 	WHERE s.id = $1
+	AND s.expires > now()
 	`
 	u := new(petfind.User)
 	err := db.QueryRow(userGetBySessionIDQuery, sessionID).Scan(

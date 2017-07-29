@@ -54,7 +54,8 @@ func TestGetUserBySessionID(t *testing.T) {
 		t.Fatalf("CreateUser failed: %v", err)
 	}
 
-	if err := s.CreateUserSession(&petfind.Session{ID: "foo", UserID: 1}); err != nil {
+	session := &petfind.Session{ID: "foo", UserID: 1, Added: time.Now(), Expires: time.Now().Add(time.Duration(30) * time.Minute)}
+	if err := s.CreateUserSession(session); err != nil {
 		t.Fatalf("CreateUserSession failed: %v", err)
 	}
 
@@ -69,6 +70,27 @@ func TestGetUserBySessionID(t *testing.T) {
 	want := &petfind.User{ID: 1, Name: "Jane Doe", GithubID: githubID}
 	if got := user; !reflect.DeepEqual(got, want) {
 		t.Fatalf("GetUserBySessionID \nhave: %#v\nwant: %#v", got, want)
+	}
+}
+
+func TestGetUserBySessionID_expired(t *testing.T) {
+	s := setup(t)
+	defer teardown(t, s)
+
+	githubID := int64(5)
+	u := &petfind.User{Name: "Jane Doe", GithubID: githubID}
+	if err := s.CreateUser(u); err != nil {
+		t.Fatalf("CreateUser failed: %v", err)
+	}
+
+	session := &petfind.Session{ID: "foo", UserID: 1, Added: time.Now(), Expires: time.Now()}
+	if err := s.CreateUserSession(session); err != nil {
+		t.Fatalf("CreateUserSession failed: %v", err)
+	}
+
+	_, err := s.GetUserBySessionID("foo")
+	if err != petfind.ErrNotFound {
+		t.Fatalf("GetUserBySessionID for expired session returned %v, expected: %q", err, petfind.ErrNotFound)
 	}
 }
 
