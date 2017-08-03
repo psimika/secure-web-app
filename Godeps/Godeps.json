@@ -7,6 +7,36 @@
 	],
 	"Deps": [
 		{
+			"ImportPath": "github.com/boj/redistore",
+			"Comment": "v1.2-5-g4562487",
+			"Rev": "4562487a4bee9a7c272b72bfaeda4917d0a47ab9"
+		},
+		{
+			"ImportPath": "github.com/garyburd/redigo/internal",
+			"Comment": "v1.1.0-8-g9e66b83",
+			"Rev": "9e66b83d15a259978be267d0b61838c42c3904e3"
+		},
+		{
+			"ImportPath": "github.com/garyburd/redigo/redis",
+			"Comment": "v1.1.0-8-g9e66b83",
+			"Rev": "9e66b83d15a259978be267d0b61838c42c3904e3"
+		},
+		{
+			"ImportPath": "github.com/gorilla/context",
+			"Comment": "v1.1-7-g08b5f42",
+			"Rev": "08b5f424b9271eedf6f9f0ce86cb9396ed337a42"
+		},
+		{
+			"ImportPath": "github.com/gorilla/securecookie",
+			"Comment": "v1.1-6-ge59506c",
+			"Rev": "e59506cc896acb7f7bf732d4fdf5e25f7ccd8983"
+		},
+		{
+			"ImportPath": "github.com/gorilla/sessions",
+			"Comment": "v1.1-6-g8b6b4cd",
+			"Rev": "8b6b4cd75f07f7ee036eb37b8127bd40ab1efc49"
+		},
+		{
 			"ImportPath": "github.com/lib/pq",
 			"Comment": "go1.0-cutoff-173-gdd1fe20",
 			"Rev": "dd1fe2071026ce53f36a39112e645b4d4f5793a4"
