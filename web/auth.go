@@ -2,17 +2,18 @@ package web
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
+	"log"
 	"net/http"
 	"time"
 
 	"golang.org/x/oauth2"
 
+	"github.com/gorilla/securecookie"
+	"github.com/gorilla/sessions"
 	"github.com/psimika/secure-web-app/petfind"
 )
 
@@ -27,20 +28,71 @@ const (
 // the session ID is not found in the context, the handler redirects to /login.
 func (s *server) auth(fn handler) handler {
 	return func(w http.ResponseWriter, r *http.Request) *Error {
-		sessionCookie, err := r.Cookie(sessionCookieName)
-		if err != nil || sessionCookie.Value == "" {
-			http.Redirect(w, r, "/login", http.StatusFound)
-			return nil
-		}
-		sessionID := sessionCookie.Value
-		user, err := s.store.GetUserBySessionID(sessionID)
+		log.Println("r.Referer():", r.Referer())
+		log.Println("r.RemoteAddr:", r.RemoteAddr)
+		log.Println("r.Header.Get(\"X-Forwarded-For\"):", r.Header.Get("X-Forwarded-For"))
+
+		session, err := s.sessions.Get(r, "gorilla_session")
 		if err != nil {
+			log.Printf("error getting session: %v", err)
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return nil
 		}
 
+		// Get the session's created value to find when it was created.
+		t, ok := session.Values["created"]
+		if !ok {
+			log.Println("session has no created value")
+			http.Redirect(w, r, "/login", http.StatusFound)
+			return nil
+		}
+		created, ok := t.(int64)
+		if !ok {
+			log.Println("unexpected created type")
+			http.Redirect(w, r, "/login", http.StatusFound)
+			return nil
+		}
+
+		// If the session has expired then we delete it.
+		expirationTime := time.Unix(created, 0).Add(time.Duration(s.sessionMaxTTL) * time.Second)
+		if expirationTime.Before(time.Now()) {
+			log.Println("session expired")
+			session.Options.MaxAge = -1
+			if err = sessions.Save(r, w); err != nil {
+				return E(err, "error deleting expired session", http.StatusInternalServerError)
+			}
+			http.Redirect(w, r, "/login", http.StatusFound)
+			return nil
+		}
+
+		// Get the user's ID stored in the session.
+		v, ok := session.Values["userID"]
+		if !ok {
+			log.Println("session has no userID")
+			http.Redirect(w, r, "/login", http.StatusFound)
+			return nil
+		}
+		userID, ok := v.(int64)
+		if !ok {
+			log.Println("unexpected userID type")
+			http.Redirect(w, r, "/login", http.StatusFound)
+			return nil
+		}
+
+		// Get the user from the database based on the session's user ID.
+		user, err := s.store.GetUser(userID)
+		if err != nil {
+			return E(err, "error getting user", http.StatusInternalServerError)
+		}
+
+		// Extend session's idle timeout.
+		session.Options.MaxAge = s.sessionTTL
+		if err = sessions.Save(r, w); err != nil {
+			return E(err, "error saving session", http.StatusInternalServerError)
+		}
+
+		// Put user in the context so that the next handler can access it.
 		ctx := newContextWithUser(r.Context(), user)
-		ctx = newContextWithSessionID(ctx, sessionID)
 		fn(w, r.WithContext(ctx))
 		return nil
 	}
@@ -78,6 +130,7 @@ func newContextWithSessionID(ctx context.Context, sessionID string) context.Cont
 
 const (
 	sessionCookieName   = "petfind_session"
+	stateCookieName     = "petfind_oauth_state"
 	oauthStateTokenSize = 32
 	// OWASP (2017b) recommends a session ID length of at least 16 bytes to
 	// prevent brute force attacks:
@@ -98,20 +151,15 @@ func (s *server) handleLogout(w http.ResponseWriter, r *http.Request) *Error {
 		return E(nil, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	}
 
-	user, ok := fromContextGetUser(r.Context())
-	if !ok || user == nil {
-		return E(nil, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+	session, err := s.sessions.Get(r, "gorilla_session")
+	if err != nil {
+		return E(err, "error getting session for logout", http.StatusInternalServerError)
 	}
-	sessionID, ok := fromContextGetSessionID(r.Context())
-	if !ok || sessionID == "" {
-		return E(nil, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+	session.Options.MaxAge = -1
+	if err = sessions.Save(r, w); err != nil {
+		return E(err, "error deleting session for logout", http.StatusInternalServerError)
 	}
 
-	if err := s.store.DeleteUserSession(sessionID); err != nil {
-		return E(err, "error deleting user session", http.StatusInternalServerError)
-	}
-	cookie := &http.Cookie{Name: sessionCookieName, Value: "", Path: "/", MaxAge: -1, Secure: true, HttpOnly: true}
-	http.SetCookie(w, cookie)
 	http.Redirect(w, r, "/", http.StatusFound)
 	return nil
 }
@@ -129,27 +177,21 @@ type GitHubUser struct {
 // http://pierrecaserta.com/go-oauth-facebook-github-twitter-google-plus/
 func (s *server) handleLoginGitHub(w http.ResponseWriter, r *http.Request) *Error {
 	// Create oauth state token.
-	key := generateRandomKey(oauthStateTokenSize)
+	key := securecookie.GenerateRandomKey(oauthStateTokenSize)
 	if key == nil {
-		return E(nil, "error generating random key", http.StatusInternalServerError)
+		return E(nil, "error generating random oauth state token", http.StatusInternalServerError)
 	}
 	state := base64.URLEncoding.EncodeToString(key)
 
-	// Put state token in our whitelist to be able to track it and make sure it
-	// will only be received once and thus mitigate replay attacks.
-	s.stateWhitelist.Put(state)
-
-	// Store state token in a cookie to be able to receive it in the callback
-	// handler.
-	oauthStateCookie := &http.Cookie{
-		Name:     "petfind_oauth_state",
-		Value:    state,
-		Path:     "/",
-		Secure:   true,
-		HttpOnly: true,
-		Expires:  time.Now().Add(2 * time.Minute),
+	session, err := s.sessions.Get(r, "gorilla_session")
+	if err != nil {
+		return E(err, "error getting session", http.StatusInternalServerError)
 	}
-	http.SetCookie(w, oauthStateCookie)
+	session.Values["state"] = state
+	session.Values["created"] = time.Now().UTC().Unix()
+	if err := session.Save(r, w); err != nil {
+		return E(err, "error saving session", http.StatusInternalServerError)
+	}
 
 	url := s.github.AuthCodeURL(state, oauth2.AccessTypeOnline)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
@@ -161,32 +203,18 @@ func (s *server) handleLoginGitHub(w http.ResponseWriter, r *http.Request) *Erro
 //
 // http://pierrecaserta.com/go-oauth-facebook-github-twitter-google-plus/
 func (s *server) handleLoginGitHubCallback(w http.ResponseWriter, r *http.Request) *Error {
-	// Get the state token that we stored in the cookie when it was generated
-	// by the handleLoginGitHub login handler.
-	//
-	// The application must be serving HTTPS for this to work.
-	//
-	// If the application is serving HTTP then the cookie will not exist after
-	// the roundtrip because of the change of protocols since GitHub is using
-	// HTTPS. Therefore login with GitHub will only work when the application
-	// is serving HTTPS.
-	oauthStateCookie, err := r.Cookie("petfind_oauth_state")
-	if err == http.ErrNoCookie {
-		guess := "serving HTTP? oauth state cannot be accessed when changing protocols HTTPS(GitHub)->HTTP"
-		return E(err, "no oauth state: "+guess, http.StatusForbidden)
-	}
+	session, err := s.sessions.Get(r, "gorilla_session")
 	if err != nil {
-		return E(err, "error reading oauth state cookie", http.StatusInternalServerError)
+		return E(err, "error getting session", http.StatusInternalServerError)
 	}
-	oauthState := oauthStateCookie.Value
-
-	// Make sure the state token exists in our whitelist and if it does, delete
-	// it from the whitelist so it cannot be used again and prevent replay
-	// attacks.
-	if !s.stateWhitelist.Get(oauthState) {
-		return E(nil, "unknown oauth state token", http.StatusForbidden)
+	val, ok := session.Values["state"]
+	if !ok {
+		return E(nil, "no state in session", http.StatusForbidden)
 	}
-	s.stateWhitelist.Delete(oauthState)
+	oauthState, ok := val.(string)
+	if !ok {
+		return E(nil, "unexpected state type", http.StatusForbidden)
+	}
 
 	// Check that the state token returned from GitHub is the same as the one
 	// we generated.
@@ -214,10 +242,6 @@ func (s *server) handleLoginGitHubCallback(w http.ResponseWriter, r *http.Reques
 		return E(err, "could not get user from GitHub API", http.StatusInternalServerError)
 	}
 
-	return s.loginGithubUser(w, r, githubUser)
-}
-
-func (s *server) loginGithubUser(w http.ResponseWriter, r *http.Request, githubUser *GitHubUser) *Error {
 	user, err := s.store.GetUserByGithubID(githubUser.ID)
 	// If the user is not found in our database we create them.
 	if err != nil && err == petfind.ErrNotFound {
@@ -233,30 +257,12 @@ func (s *server) loginGithubUser(w http.ResponseWriter, r *http.Request, githubU
 	if err != nil && err != petfind.ErrNotFound {
 		return E(err, "could not retrieve user", http.StatusInternalServerError)
 	}
-	key := generateRandomKey(sessionIDSize)
-	if key == nil {
-		return E(err, "could not generate session ID", http.StatusInternalServerError)
-	}
-	now := time.Now()
-	session := &petfind.Session{
-		ID:      base64.URLEncoding.EncodeToString(key),
-		UserID:  user.ID,
-		Added:   now,
-		Expires: now.Add(s.sessionDuration),
-	}
-	if err := s.store.CreateUserSession(session); err != nil {
-		return E(err, "could not create session", http.StatusInternalServerError)
-	}
 
-	sessionCookie := &http.Cookie{
-		Name:     sessionCookieName,
-		Value:    session.ID,
-		Path:     "/",
-		Secure:   true,
-		HttpOnly: true,
-		Expires:  now.Add(s.sessionDuration),
+	session.Values["userID"] = user.ID
+	delete(session.Values, "state")
+	if err := session.Save(r, w); err != nil {
+		return E(err, "error saving session", http.StatusInternalServerError)
 	}
-	http.SetCookie(w, sessionCookie)
 	return nil
 }
 
@@ -270,17 +276,4 @@ func getGitHubUser(client *http.Client) (*GitHubUser, error) {
 		return nil, fmt.Errorf("could not decode user: %v", err)
 	}
 	return user, nil
-}
-
-// generateRandomKey creates a random key with the given length in bytes.
-// On failure, returns nil.
-//
-// Callers should explicitly check for the possibility of a nil return, treat
-// it as a failure of the system random number generator, and not continue.
-func generateRandomKey(length int) []byte {
-	k := make([]byte, length)
-	if _, err := io.ReadFull(rand.Reader, k); err != nil {
-		return nil
-	}
-	return k
 }

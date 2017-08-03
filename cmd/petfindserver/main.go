@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boj/redistore"
+	"github.com/gorilla/sessions"
 	_ "github.com/lib/pq"
 
 	"github.com/psimika/secure-web-app/https"
@@ -17,22 +19,26 @@ import (
 	"github.com/psimika/secure-web-app/web"
 )
 
-const defaultSessionMinutes = 30
-
 func main() {
 	var (
-		dataSource     = flag.String("datasource", "", "the database URL")
-		httpAddr       = flag.String("http", ":8080", "HTTP address for the server to listen on")
-		httpsAddr      = flag.String("https", ":8443", "HTTPS address for the server to listen on")
-		tmplPath       = flag.String("tmpl", defaultTmplPath(), "path containing the application's templates")
-		insecureHTTP   = flag.Bool("insecure", false, "whether to serve insecure HTTP instead of HTTPS")
-		certFile       = flag.String("tlscert", "", "TLS public key in PEM format used together with -tlskey")
-		keyFile        = flag.String("tlskey", "", "TLS private key in PEM format used together with -tlscert")
-		autocertHosts  = flag.String("autocert", "", "one or more host names separated by space to get Let's Encrypt certificates automatically")
-		autocertCache  = flag.String("autocertdir", "", "directory to cache the Let's Encrypt certificates")
-		githubID       = flag.String("githubid", "", "GitHub Client ID used for Login with GitHub")
-		githubSecret   = flag.String("githubsecret", "", "GitHub Client Secret used for Login with GitHub")
-		sessionMinutes = flag.Int("sessionmins", defaultSessionMinutes, "`minutes` that the server's sessions will remain valid")
+		dataSource    = flag.String("datasource", "", "the database URL")
+		httpAddr      = flag.String("http", ":8080", "HTTP address for the server to listen on")
+		httpsAddr     = flag.String("https", ":8443", "HTTPS address for the server to listen on")
+		tmplPath      = flag.String("tmpl", defaultTmplPath(), "path containing the application's templates")
+		insecureHTTP  = flag.Bool("insecure", false, "whether to serve insecure HTTP instead of HTTPS")
+		certFile      = flag.String("tlscert", "", "TLS public key in PEM format used together with -tlskey")
+		keyFile       = flag.String("tlskey", "", "TLS private key in PEM format used together with -tlscert")
+		autocertHosts = flag.String("autocert", "", "one or more host names separated by space to get Let's Encrypt certificates automatically")
+		autocertCache = flag.String("autocertdir", "", "directory to cache the Let's Encrypt certificates")
+		githubID      = flag.String("githubid", "", "GitHub Client ID used for Login with GitHub")
+		githubSecret  = flag.String("githubsecret", "", "GitHub Client Secret used for Login with GitHub")
+		hashKeyStr    = flag.String("hashkey", "", "random key (32 or 64 bytes) used to sign/authenticate values using HMAC")
+		blockKeyStr   = flag.String("blockkey", "", "random key (32 bytes) used to encrypt values using AES-256")
+		redisAddr     = flag.String("redis", ":6379", "Redis address to connect to and store sessions")
+		redisPass     = flag.String("redispass", "", "Redis password if needed")
+		redisMaxIdle  = flag.Int("redismaxidle", 10, "maximum number of idle Redis connections")
+		sessionTTL    = flag.Int("sessionttl", 1200, "`seconds` before a session expires due to inactivity (idle timeout)")
+		sessionMaxTTL = flag.Int("sessionmaxttl", 3600, "`seconds` before a session expires regardless of activity (absolute timeout)")
 	)
 	flag.Parse()
 	if !*insecureHTTP && *autocertHosts == "" && (*certFile == "" || *keyFile == "") {
@@ -42,6 +48,8 @@ func main() {
 		log.Println("Or use -tlscert=<public key file> -tlskey=<private key file> to provide your own certificate.")
 		log.Fatal("Or use the -insecure flag to serve insecure HTTP instead of HTTPS.")
 	}
+	hashKey := validHashKey(*hashKeyStr)
+	blockKey := validBlockKey(*blockKeyStr)
 
 	if *dataSource == "" {
 		log.Fatal("No database datasource provided, exiting...")
@@ -53,7 +61,33 @@ func main() {
 		return
 	}
 
-	appHandlers, err := web.NewServer(store, *tmplPath, *githubID, *githubSecret, time.Duration(*sessionMinutes)*time.Minute)
+	sessionStore, err := redistore.NewRediStore(*redisMaxIdle, "tcp", *redisAddr, *redisPass, hashKey, blockKey)
+	if err != nil {
+		log.Println("NewRediStore failed:", err)
+		return
+	}
+	defer sessionStore.Close()
+	sessionStore.Options = &sessions.Options{
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		MaxAge:   *sessionTTL,
+	}
+	if *insecureHTTP {
+		sessionStore.Options.Secure = false
+	}
+
+	appHandlers, err := web.NewServer(
+		store,
+		sessionStore,
+		*sessionTTL,
+		*sessionMaxTTL,
+		hashKey,
+		blockKey,
+		*tmplPath,
+		*githubID,
+		*githubSecret,
+	)
 	if err != nil {
 		log.Println("NewServer failed:", err)
 		return

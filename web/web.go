@@ -7,11 +7,12 @@ import (
 	"net/http"
 	"path/filepath"
 	"sync"
-	"time"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
 
+	gorillactx "github.com/gorilla/context"
+	"github.com/gorilla/sessions"
 	"github.com/psimika/secure-web-app/petfind"
 )
 
@@ -36,7 +37,6 @@ type handler func(http.ResponseWriter, *http.Request) *Error
 
 func (fn handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if e := fn(w, r); e != nil { // e is *web.Error, not error.
-		log.SetFlags(log.LstdFlags | log.Lshortfile)
 		log.Println(e)
 		http.Error(w, e.Message, e.Code)
 	}
@@ -44,13 +44,15 @@ func (fn handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // server is the application's HTTP server.
 type server struct {
-	handlers        http.Handler
-	mux             *http.ServeMux
-	store           petfind.Store
-	tmpl            *tmpl
-	github          *oauth2.Config
-	stateWhitelist  *stateWhitelist
-	sessionDuration time.Duration
+	handlers       http.Handler
+	mux            *http.ServeMux
+	store          petfind.Store
+	tmpl           *tmpl
+	github         *oauth2.Config
+	stateWhitelist *stateWhitelist
+	sessions       sessions.Store
+	sessionTTL     int
+	sessionMaxTTL  int
 }
 
 // tmpl contains the server's templates required to render its pages.
@@ -63,23 +65,33 @@ type tmpl struct {
 }
 
 // NewServer initializes and returns a new HTTP server.
-func NewServer(store petfind.Store, templatePath, githubID, githubSecret string, sessionDuration time.Duration) (http.Handler, error) {
+func NewServer(
+	store petfind.Store,
+	sessionStore sessions.Store,
+	sessionTTL int,
+	sessionMaxTTL int,
+	hashKey []byte,
+	blockKey []byte,
+	templatePath string,
+	githubID string,
+	githubSecret string,
+) (http.Handler, error) {
 	t, err := parseTemplates(filepath.Join(templatePath, "templates"))
 	if err != nil {
 		return nil, fmt.Errorf("error parsing templates: %v", err)
 	}
-	if sessionDuration == 0 {
-		sessionDuration = time.Duration(30 * time.Minute)
-	}
+
 	s := &server{
-		mux:             http.NewServeMux(),
-		store:           store,
-		tmpl:            t,
-		github:          newGitHubOAuthConfig(githubID, githubSecret),
-		stateWhitelist:  newStateWhitelist(),
-		sessionDuration: sessionDuration,
+		mux:            http.NewServeMux(),
+		store:          store,
+		tmpl:           t,
+		github:         newGitHubOAuthConfig(githubID, githubSecret),
+		stateWhitelist: newStateWhitelist(),
+		sessions:       sessionStore,
+		sessionTTL:     sessionTTL,
+		sessionMaxTTL:  sessionMaxTTL,
 	}
-	s.handlers = s.mux
+	s.handlers = gorillactx.ClearHandler(s.mux)
 	s.mux.Handle("/", handler(s.homeHandler))
 	s.mux.Handle("/form", handler(s.searchReplyHandler))
 	s.mux.Handle("/pets", handler(s.servePets))
