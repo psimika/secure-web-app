@@ -226,13 +226,13 @@ func (s *server) handleLoginGitHubCallback(w http.ResponseWriter, r *http.Reques
 
 	// Exchange authorization code for a GitHub API token.
 	code := r.FormValue("code")
-	token, err := s.github.Exchange(oauth2.NoContext, code)
+	token, err := s.github.Exchange(context.Background(), code)
 	if err != nil {
 		return E(err, "error exchanging authorization code for token", http.StatusInternalServerError)
 	}
 
 	// Create an HTTP client that uses the GitHub API token.
-	c := s.github.Client(oauth2.NoContext, token)
+	c := s.github.Client(context.Background(), token)
 
 	// Use the client to get the consented user's info from the GitHub API.
 	githubUser, err := getGitHubUser(c)
