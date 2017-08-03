@@ -220,7 +220,7 @@ func (s *server) handleLoginGitHubCallback(w http.ResponseWriter, r *http.Reques
 	// Constant time compare to mitigate timing attacks.
 	if subtle.ConstantTimeCompare([]byte(state), []byte(oauthState)) != 1 {
 		// TODO(psimika): Redirect instead of returning an error?
-		e := fmt.Errorf("invalid oauth state, expected %q, got %q\n", oauthState, state)
+		e := fmt.Errorf("invalid oauth state, expected %q, got %q", oauthState, state)
 		return E(e, "invalid oauth state", http.StatusForbidden)
 	}
 
