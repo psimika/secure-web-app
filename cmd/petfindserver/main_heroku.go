@@ -7,8 +7,9 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 
+	"github.com/boj/redistore"
+	"github.com/gorilla/sessions"
 	_ "github.com/lib/pq"
 
 	"github.com/psimika/secure-web-app/petfind/postgres"
@@ -40,13 +41,21 @@ func main() {
 	// app knows on which database to connect and on which port to listen on.
 	// Heroku deploys the application under /app.
 	var (
-		databaseURL  = getenvString("", "DATABASE_URL")
-		port         = getenvString("8080", "PORT")
-		tmplPath     = getenvString("/app/web", "TMPL_PATH")
-		githubID     = getenvString("", "GITHUB_ID")
-		githubSecret = getenvString("", "GITHUB_SECRET")
-		sessionMins  = getenvInt(30, "SESSION_MINS")
+		databaseURL   = getenvString("", "DATABASE_URL")
+		port          = getenvString("8080", "PORT")
+		tmplPath      = getenvString("/app/web", "TMPL_PATH")
+		githubID      = getenvString("", "GITHUB_ID")
+		githubSecret  = getenvString("", "GITHUB_SECRET")
+		sessionTTL    = getenvInt(1200, "SESSION_TTL")
+		sessionMaxTTL = getenvInt(3600, "SESSION_MAX_TTL")
+		redisURL      = getenvString("", "REDIS_URL")
+		redisPass     = getenvString("", "REDIS_PASS")
+		redisMaxIdle  = getenvInt(10, "REDIS_MAX_IDLE")
+		hashKeyStr    = getenvString("", "HASH_KEY")
+		blockKeyStr   = getenvString("", "BLOCK_KEY")
 	)
+	hashKey := validHashKey(hashKeyStr)
+	blockKey := validBlockKey(blockKeyStr)
 
 	if databaseURL == "" {
 		log.Fatal("No database URL provided, exiting...")
@@ -58,7 +67,29 @@ func main() {
 		return
 	}
 
-	handlers, err := web.NewServer(store, tmplPath, githubID, githubSecret, time.Duration(sessionMins)*time.Minute)
+	sessionStore, err := redistore.NewRediStore(redisMaxIdle, "tcp", redisURL, redisPass, hashKey, blockKey)
+	if err != nil {
+		log.Println("NewRediStore failed:", err)
+		return
+	}
+	defer sessionStore.Close()
+	sessionStore.Options = &sessions.Options{
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		MaxAge:   sessionTTL,
+	}
+
+	handlers, err := web.NewServer(
+		store,
+		sessionStore,
+		sessionTTL,
+		sessionMaxTTL,
+		hashKey,
+		blockKey,
+		tmplPath,
+		githubID,
+		githubSecret)
 	if err != nil {
 		log.Println("NewServer failed:", err)
 		return
