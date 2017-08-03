@@ -1,3 +1,5 @@
+// Package https provides helpers for starting an HTTPS server and serving an
+// application's handlers.
 package https
 
 import (
@@ -11,6 +13,9 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
+// ListenAndServeAutocert automatically gets Let's Encrypt certificates for the
+// provided hosts and launches an HTTPS server to serve the application's
+// handlers.
 func ListenAndServeAutocert(httpsAddr, cachePath string, hosts []string, appHandlers http.Handler) error {
 	var m autocert.Manager
 	m.Prompt = autocert.AcceptTOS
@@ -36,6 +41,8 @@ func ListenAndServeAutocert(httpsAddr, cachePath string, hosts []string, appHand
 	return fmt.Errorf("https: %v", err)
 }
 
+// ListenAndServeTLS launches an HTTPS server to serve the application's
+// handlers using the provided TLS certificaces.
 func ListenAndServeTLS(addr, certFile, keyFile string, handler http.Handler) error {
 	tlsConfig, err := newDefaultTLSConfig(certFile, keyFile)
 	if err != nil {
