@@ -66,7 +66,11 @@ func main() {
 		log.Println("NewRediStore failed:", err)
 		return
 	}
-	defer sessionStore.Close()
+	defer func() {
+		if err = sessionStore.Close(); err != nil {
+			log.Println("Error closing session store:", err)
+		}
+	}()
 	sessionStore.Options = &sessions.Options{
 		Path:     "/",
 		HttpOnly: true,
