@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// ErrNotFound is returned whenever an item does not exist in the Store.
 var ErrNotFound = errors.New("item not found")
 
 // Pet holds information about each pet of the application.
@@ -30,6 +31,7 @@ type Store interface {
 	DropSchema() error
 }
 
+// User holds information about a user that is signed in the application.
 type User struct {
 	ID       int64
 	GithubID int64
