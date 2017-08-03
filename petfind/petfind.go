@@ -26,9 +26,6 @@ type Store interface {
 	GetUserByGithubID(githubID int64) (*User, error)
 	GetUserBySessionID(sessionID string) (*User, error)
 
-	CreateUserSession(*Session) error
-	DeleteUserSession(sessionID string) error
-
 	MakeSchema() error
 	DropSchema() error
 }
@@ -40,13 +37,6 @@ type User struct {
 	Name     string
 	Email    string
 	Added    time.Time
-}
-
-type Session struct {
-	ID      string
-	UserID  int64
-	Added   time.Time
-	Expires time.Time
 }
 
 // TODO(psimika): Useful article in case a custom type needs to be stored in
