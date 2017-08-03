@@ -32,7 +32,7 @@ func (s *server) auth(fn handler) handler {
 		log.Println("r.RemoteAddr:", r.RemoteAddr)
 		log.Println("r.Header.Get(\"X-Forwarded-For\"):", r.Header.Get("X-Forwarded-For"))
 
-		session, err := s.sessions.Get(r, "gorilla_session")
+		session, err := s.sessions.Get(r, sessionName)
 		if err != nil {
 			log.Printf("error getting session: %v", err)
 			http.Redirect(w, r, "/login", http.StatusFound)
@@ -129,14 +129,12 @@ func newContextWithSessionID(ctx context.Context, sessionID string) context.Cont
 // ---
 
 const (
-	sessionCookieName   = "petfind_session"
-	stateCookieName     = "petfind_oauth_state"
-	oauthStateTokenSize = 32
-	// OWASP (2017b) recommends a session ID length of at least 16 bytes to
-	// prevent brute force attacks:
+	// OWASP (2017b) recommends using a generic name such as "id" for the
+	// session ID name to avoid exposing implementation details:
 	//
-	// https://www.owasp.org/index.php/Session_Management_Cheat_Sheet#Session_ID_Length
-	sessionIDSize = 32
+	// https://www.owasp.org/index.php/Session_Management_Cheat_Sheet#Session_ID_Name_Fingerprinting
+	sessionName         = "id"
+	oauthStateTokenSize = 32
 )
 
 func (s *server) serveLogin(w http.ResponseWriter, r *http.Request) *Error {
@@ -151,7 +149,7 @@ func (s *server) handleLogout(w http.ResponseWriter, r *http.Request) *Error {
 		return E(nil, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	}
 
-	session, err := s.sessions.Get(r, "gorilla_session")
+	session, err := s.sessions.Get(r, sessionName)
 	if err != nil {
 		return E(err, "error getting session for logout", http.StatusInternalServerError)
 	}
@@ -183,7 +181,7 @@ func (s *server) handleLoginGitHub(w http.ResponseWriter, r *http.Request) *Erro
 	}
 	state := base64.URLEncoding.EncodeToString(key)
 
-	session, err := s.sessions.Get(r, "gorilla_session")
+	session, err := s.sessions.Get(r, sessionName)
 	if err != nil {
 		return E(err, "error getting session", http.StatusInternalServerError)
 	}
@@ -203,7 +201,7 @@ func (s *server) handleLoginGitHub(w http.ResponseWriter, r *http.Request) *Erro
 //
 // http://pierrecaserta.com/go-oauth-facebook-github-twitter-google-plus/
 func (s *server) handleLoginGitHubCallback(w http.ResponseWriter, r *http.Request) *Error {
-	session, err := s.sessions.Get(r, "gorilla_session")
+	session, err := s.sessions.Get(r, sessionName)
 	if err != nil {
 		return E(err, "error getting session", http.StatusInternalServerError)
 	}
