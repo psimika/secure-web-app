@@ -22,6 +22,7 @@ type Store interface {
 	GetAllPets() ([]Pet, error)
 
 	CreateUser(*User) error
+	GetUser(userID int64) (*User, error)
 	GetUserByGithubID(githubID int64) (*User, error)
 	GetUserBySessionID(sessionID string) (*User, error)
 

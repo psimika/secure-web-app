@@ -34,6 +34,36 @@ func (db *store) CreateUser(u *petfind.User) error {
 	return nil
 }
 
+func (db *store) GetUser(userID int64) (*petfind.User, error) {
+	const userGetQuery = `
+	SELECT
+	  id,
+	  github_id,
+	  login,
+	  name,
+	  email,
+	  added
+	FROM users
+	WHERE id = $1
+	`
+	u := new(petfind.User)
+	err := db.QueryRow(userGetQuery, userID).Scan(
+		&u.ID,
+		&u.GithubID,
+		&u.Login,
+		&u.Name,
+		&u.Email,
+		&u.Added,
+	)
+	if err == sql.ErrNoRows {
+		return nil, petfind.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
 func (db *store) GetUserByGithubID(userID int64) (*petfind.User, error) {
 	const userGetByGithubIDQuery = `
 	SELECT
