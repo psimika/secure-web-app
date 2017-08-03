@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/boj/redistore"
+	"github.com/garyburd/redigo/redis"
 	"github.com/gorilla/sessions"
 	_ "github.com/lib/pq"
 
@@ -67,7 +69,7 @@ func main() {
 		return
 	}
 
-	sessionStore, err := redistore.NewRediStore(redisMaxIdle, "tcp", redisURL, redisPass, hashKey, blockKey)
+	sessionStore, err := newRediStoreURL(redisMaxIdle, redisURL, redisPass, hashKey, blockKey)
 	if err != nil {
 		log.Println("NewRediStore failed:", err)
 		return
@@ -137,4 +139,32 @@ func redirectHTTP(h http.Handler) http.Handler {
 		}
 		h.ServeHTTP(w, r)
 	})
+}
+
+func newRediStoreURL(size int, url, password string, keyPairs ...[]byte) (*redistore.RediStore, error) {
+	return redistore.NewRediStoreWithPool(&redis.Pool{
+		MaxIdle:     size,
+		IdleTimeout: 240 * time.Second,
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			_, err := c.Do("PING")
+			return err
+		},
+		Dial: func() (redis.Conn, error) {
+			return dialURL(url, password)
+		},
+	}, keyPairs...)
+}
+
+func dialURL(url, password string) (redis.Conn, error) {
+	c, err := redis.DialURL(url)
+	if err != nil {
+		return nil, err
+	}
+	if password != "" {
+		if _, err := c.Do("AUTH", password); err != nil {
+			c.Close()
+			return nil, err
+		}
+	}
+	return c, err
 }
