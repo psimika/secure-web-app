@@ -46,22 +46,10 @@ func (db *store) MakeSchema() error {
 	if _, err := db.Exec(users); err != nil {
 		return fmt.Errorf("error creating table users: %v", err)
 	}
-	const sessions = `CREATE TABLE IF NOT EXISTS sessions (
-		id varchar(50) PRIMARY KEY,
-		user_id int REFERENCES users (id),
-		added timestamp,
-		expires timestamp
-	)`
-	if _, err := db.Exec(sessions); err != nil {
-		return fmt.Errorf("error creating table sessions: %v", err)
-	}
 	return nil
 }
 
 func (db *store) DropSchema() error {
-	if _, err := db.Exec("DROP TABLE sessions"); err != nil {
-		return fmt.Errorf("error dropping table sessions: %v", err)
-	}
 	if _, err := db.Exec("DROP TABLE users"); err != nil {
 		return fmt.Errorf("error dropping table users: %v", err)
 	}
