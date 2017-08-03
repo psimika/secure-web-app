@@ -20,10 +20,7 @@ func (db *store) CreateUserSession(s *petfind.Session) error {
 		}
 	}()
 	_, err = stmt.Exec(s.ID, s.UserID, s.Added, s.Expires)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (db *store) DeleteUserSession(sessionID string) error {
@@ -39,8 +36,6 @@ func (db *store) DeleteUserSession(sessionID string) error {
 		}
 	}()
 
-	if _, err := stmt.Exec(sessionID); err != nil {
-		return err
-	}
-	return nil
+	_, err = stmt.Exec(sessionID)
+	return err
 }
