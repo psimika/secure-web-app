@@ -162,7 +162,7 @@ func (s *server) handleLogout(w http.ResponseWriter, r *http.Request) *Error {
 	return nil
 }
 
-type GitHubUser struct {
+type gitHubUser struct {
 	ID    int64  `json:"id"`
 	Login string `json:"login"`
 	Name  string `json:"name"`
@@ -264,12 +264,12 @@ func (s *server) handleLoginGitHubCallback(w http.ResponseWriter, r *http.Reques
 	return nil
 }
 
-func getGitHubUser(client *http.Client) (*GitHubUser, error) {
+func getGitHubUser(client *http.Client) (*gitHubUser, error) {
 	resp, err := client.Get("https://api.github.com/user")
 	if err != nil {
 		return nil, err
 	}
-	user := new(GitHubUser)
+	user := new(gitHubUser)
 	if err := json.NewDecoder(resp.Body).Decode(user); err != nil {
 		return nil, fmt.Errorf("could not decode user: %v", err)
 	}
