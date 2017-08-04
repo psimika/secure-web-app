@@ -99,3 +99,21 @@ func TestPutGithubUser(t *testing.T) {
 		t.Fatalf("PutGithubUser second run \nhave: %#v\nwant: %#v", got, want)
 	}
 }
+
+// When a github user doesn't have their name filled in their profile, we
+// use login instead.
+func TestPutGithubUser_emptyName(t *testing.T) {
+	s := setup(t)
+	defer teardown(t, s)
+
+	githubID := int64(5)
+	u, err := s.PutGithubUser(githubID, "janedoe", "", "")
+	if err != nil {
+		t.Fatal("PutGithubUser with empty name returned err:", err)
+	}
+
+	// Check that login was used as a Name.
+	if got, want := u.Name, "janedoe"; got != want {
+		t.Errorf("PutGithubUser with empty name -> user.Name=%q, expected %q", got, want)
+	}
+}
