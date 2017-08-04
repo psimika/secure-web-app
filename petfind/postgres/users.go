@@ -93,35 +93,3 @@ func (db *store) GetUserByGithubID(userID int64) (*petfind.User, error) {
 	}
 	return u, nil
 }
-
-func (db *store) GetUserBySessionID(sessionID string) (*petfind.User, error) {
-	const userGetBySessionIDQuery = `
-	SELECT
-	  u.id,
-	  u.github_id,
-	  u.login,
-	  u.name,
-	  u.email,
-	  u.created
-	FROM sessions s
-	  JOIN users u ON s.user_id = u.id
-	WHERE s.id = $1
-	AND s.expires > now()
-	`
-	u := new(petfind.User)
-	err := db.QueryRow(userGetBySessionIDQuery, sessionID).Scan(
-		&u.ID,
-		&u.GithubID,
-		&u.Login,
-		&u.Name,
-		&u.Email,
-		&u.Created,
-	)
-	if err == sql.ErrNoRows {
-		return nil, petfind.ErrNotFound
-	}
-	if err != nil {
-		return nil, err
-	}
-	return u, nil
-}
