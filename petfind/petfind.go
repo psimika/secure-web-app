@@ -24,6 +24,7 @@ type Store interface {
 
 	CreateUser(*User) error
 	GetUser(userID int64) (*User, error)
+	PutGithubUser(githubID int64, name, login, email string) (*User, error)
 	GetUserByGithubID(githubID int64) (*User, error)
 
 	MakeSchema() error

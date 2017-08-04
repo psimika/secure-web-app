@@ -64,6 +64,62 @@ func (db *store) GetUser(userID int64) (*petfind.User, error) {
 	return u, nil
 }
 
+func (db *store) PutGithubUser(githubID int64, login, name, email string) (*petfind.User, error) {
+	// A GitHub user might not have provided their name in their profile but
+	// every GitHub user has a login. So in the case they haven't provided a
+	// name we will use their login as a name instead.
+	if name == "" {
+		name = login
+	}
+	var user = &petfind.User{
+		GithubID: githubID,
+		Login:    login,
+		Name:     name,
+		Email:    email,
+	}
+	const (
+		userUpdateStmt = `
+	UPDATE users SET
+	  login = $2,
+	  name = $3,
+	  email = $4,
+	  updated = now()
+	WHERE github_id = $1
+	RETURNING id, created, updated
+	`
+		userInsertStmt = `
+	INSERT INTO users(github_id, login, name, email, created, updated)
+	VALUES ($1, $2, $3, $4, now(), now())
+	RETURNING id, created, updated
+	`
+	)
+
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	err = tx.QueryRow(userUpdateStmt, githubID, login, name, email).Scan(&user.ID, &user.Created, &user.Updated)
+	if err == sql.ErrNoRows {
+		err = tx.QueryRow(userInsertStmt, githubID, login, name, email).Scan(&user.ID, &user.Created, &user.Updated)
+		if err != nil {
+			return nil, err
+		}
+		if err = tx.Commit(); err != nil {
+			return nil, err
+		}
+		return user, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if err = tx.Commit(); err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
 func (db *store) GetUserByGithubID(userID int64) (*petfind.User, error) {
 	const userGetByGithubIDQuery = `
 	SELECT

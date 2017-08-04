@@ -44,62 +44,58 @@ func TestGetUserByGithubID_notFound(t *testing.T) {
 	}
 }
 
-func TestGetUserBySessionID(t *testing.T) {
+func TestPutGithubUser(t *testing.T) {
 	s := setup(t)
 	defer teardown(t, s)
 
+	// We Put the GitHub user for the first time. The user does not exist so we
+	// expect Put to create the user.
 	githubID := int64(5)
-	u := &petfind.User{Name: "Jane Doe", GithubID: githubID}
-	if err := s.CreateUser(u); err != nil {
-		t.Fatalf("CreateUser failed: %v", err)
-	}
-
-	session := &petfind.Session{ID: "foo", UserID: 1, Added: time.Now(), Expires: time.Now().Add(time.Duration(30) * time.Minute)}
-	if err := s.CreateUserSession(session); err != nil {
-		t.Fatalf("CreateUserSession failed: %v", err)
-	}
-
-	user, err := s.GetUserBySessionID("foo")
+	got, err := s.PutGithubUser(githubID, "janedoe", "Jane Doe", "jane@doe.com")
 	if err != nil {
-		t.Fatalf("GetUserBySessionID failed: %v", err)
+		t.Fatalf("PutGithubUser for non existent user returned err:", err)
 	}
 
-	// Ignore time field.
-	user.Added = time.Time{}
+	// Save created time to check it was the same when we Put for a second time
+	// below.
+	created := got.Created
+	// Ignore time values.
+	got.Created = time.Time{}
+	got.Updated = time.Time{}
 
-	want := &petfind.User{ID: 1, Name: "Jane Doe", GithubID: githubID}
-	if got := user; !reflect.DeepEqual(got, want) {
-		t.Fatalf("GetUserBySessionID \nhave: %#v\nwant: %#v", got, want)
+	want := &petfind.User{
+		ID:       1, // A newly created user should get ID 1 from Postgres.
+		GithubID: githubID,
+		Login:    "janedoe",
+		Name:     "Jane Doe",
+		Email:    "jane@doe.com",
 	}
-}
-
-func TestGetUserBySessionID_expired(t *testing.T) {
-	s := setup(t)
-	defer teardown(t, s)
-
-	githubID := int64(5)
-	u := &petfind.User{Name: "Jane Doe", GithubID: githubID}
-	if err := s.CreateUser(u); err != nil {
-		t.Fatalf("CreateUser failed: %v", err)
-	}
-
-	session := &petfind.Session{ID: "foo", UserID: 1, Added: time.Now(), Expires: time.Now()}
-	if err := s.CreateUserSession(session); err != nil {
-		t.Fatalf("CreateUserSession failed: %v", err)
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("PutGithubUser first run \nhave: %#v\nwant: %#v", got, want)
 	}
 
-	_, err := s.GetUserBySessionID("foo")
-	if err != petfind.ErrNotFound {
-		t.Fatalf("GetUserBySessionID for expired session returned %v, expected: %q", err, petfind.ErrNotFound)
+	// Attempt to Put again the github User. The GitHub user should have been
+	// already been created from the previous run and we now expect the values
+	// to be updated.
+	got, err = s.PutGithubUser(githubID, "jane", "Jane", "jane@doe.com")
+	if err != nil {
+		t.Fatal("PutGithubUser for existing user returned err:", err)
 	}
-}
 
-func TestGetUserBySessionID_notFound(t *testing.T) {
-	s := setup(t)
-	defer teardown(t, s)
+	// Ignore updated.
+	got.Updated = time.Time{}
 
-	_, err := s.GetUserBySessionID("foo")
-	if err != petfind.ErrNotFound {
-		t.Fatalf("GetUserBySessionID for unknown sessionID returned %v, expected: %q", err, petfind.ErrNotFound)
+	want = &petfind.User{
+		ID:       1, // ID stays the same as we are doing an update.
+		GithubID: githubID,
+		Login:    "jane",
+		Name:     "Jane",
+		Email:    "jane@doe.com",
+		Created:  created,
+	}
+	// This time we expect the values to be updated but the created time should
+	// be the same as the first run.
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("PutGithubUser second run \nhave: %#v\nwant: %#v", got, want)
 	}
 }
