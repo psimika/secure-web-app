@@ -20,6 +20,7 @@ func TestCreateUser(t *testing.T) {
 		t.Fatalf("CreateUser failed: %v", err)
 	}
 
+	// Test get user by their GitHub ID.
 	user, err := s.GetUserByGithubID(githubID)
 	if err != nil {
 		t.Fatalf("GetUserByGithubID failed: %v", err)
@@ -27,10 +28,22 @@ func TestCreateUser(t *testing.T) {
 
 	// Ignore time field.
 	user.Created = time.Time{}
-
 	want := &petfind.User{ID: 1, Name: "Jane Doe", GithubID: githubID}
 	if got := user; !reflect.DeepEqual(got, want) {
 		t.Fatalf("GetUserByGithubID \nhave: %#v\nwant: %#v", got, want)
+	}
+
+	// Test get user by their ID.
+	user, err = s.GetUser(1)
+	if err != nil {
+		t.Fatalf("GetUser failed: %v", err)
+	}
+
+	// Ignore time field.
+	user.Created = time.Time{}
+	want = &petfind.User{ID: 1, Name: "Jane Doe", GithubID: githubID}
+	if got := user; !reflect.DeepEqual(got, want) {
+		t.Fatalf("GetUser \nhave: %#v\nwant: %#v", got, want)
 	}
 }
 
@@ -41,6 +54,16 @@ func TestGetUserByGithubID_notFound(t *testing.T) {
 	_, err := s.GetUserByGithubID(0)
 	if err != petfind.ErrNotFound {
 		t.Fatalf("GetUserByGithubID for unknown githubID returned %v, expected: %q", err, petfind.ErrNotFound)
+	}
+}
+
+func TestGetUser_notFound(t *testing.T) {
+	s := setup(t)
+	defer teardown(t, s)
+
+	_, err := s.GetUser(0)
+	if err != petfind.ErrNotFound {
+		t.Fatalf("GetUser for unknown ID returned %v, expected: %q", err, petfind.ErrNotFound)
 	}
 }
 
