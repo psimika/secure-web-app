@@ -17,10 +17,13 @@ import (
 	"github.com/psimika/secure-web-app/petfind"
 )
 
-type contextKey int
-
 const (
-	userContextKey contextKey = iota
+	// OWASP (2017b) recommends using a generic name such as "id" for the
+	// session ID name to avoid exposing implementation details:
+	//
+	// https://www.owasp.org/index.php/Session_Management_Cheat_Sheet#Session_ID_Name_Fingerprinting
+	sessionName         = "id"
+	oauthStateTokenSize = 32
 )
 
 // auth protects other handlers letting only logged in users access them. If
@@ -98,6 +101,12 @@ func (s *server) auth(fn handler) handler {
 //
 // https://blog.golang.org/context
 
+type contextKey int
+
+const (
+	userContextKey contextKey = iota
+)
+
 // fromContextGetUser retrieves User from the context.
 func fromContextGetUser(ctx context.Context) (*petfind.User, bool) {
 	user, ok := ctx.Value(userContextKey).(*petfind.User)
@@ -140,15 +149,6 @@ func fromSessionGetUserID(session *sessions.Session) (int64, error) {
 }
 
 // ---
-
-const (
-	// OWASP (2017b) recommends using a generic name such as "id" for the
-	// session ID name to avoid exposing implementation details:
-	//
-	// https://www.owasp.org/index.php/Session_Management_Cheat_Sheet#Session_ID_Name_Fingerprinting
-	sessionName         = "id"
-	oauthStateTokenSize = 32
-)
 
 func (s *server) serveLogin(w http.ResponseWriter, r *http.Request) *Error {
 	if err := s.tmpl.login.Execute(w, nil); err != nil {
