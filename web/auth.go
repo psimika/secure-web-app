@@ -48,21 +48,12 @@ func (s *server) auth(fn handler) handler {
 			return nil
 		}
 
-		// Get the session's created value to find when it was created.
-		created, err := fromSessionGetCreated(session)
-		if err != nil {
+		// If the session is not valid then we delete it.
+		if err = s.validateSession(r, session); err != nil {
 			log.Println(err)
-			http.Redirect(w, r, "/login", http.StatusFound)
-			return nil
-		}
-
-		// If the session has expired then we delete it.
-		expirationTime := time.Unix(created, 0).Add(time.Duration(s.sessionMaxTTL) * time.Second)
-		if expirationTime.Before(time.Now()) {
-			log.Println("session expired")
 			session.Options.MaxAge = -1
 			if err = sessions.Save(r, w); err != nil {
-				return E(err, "error deleting expired session", http.StatusInternalServerError)
+				return E(err, "error deleting invalid session", http.StatusInternalServerError)
 			}
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return nil
@@ -93,6 +84,32 @@ func (s *server) auth(fn handler) handler {
 		fn(w, r.WithContext(ctx))
 		return nil
 	}
+}
+
+func (s *server) validateSession(r *http.Request, session *sessions.Session) error {
+	// Get the session's userAgent value and check with the current HTTP
+	// request's user agent. If it's not the same we consider the session
+	// as invalid for extra safety.
+	userAgent, err := fromSessionGetUserAgent(session)
+	if err != nil {
+		return err
+	}
+	if subtle.ConstantTimeCompare([]byte(userAgent), []byte(r.UserAgent())) != 1 {
+		return fmt.Errorf("User-Agent doesn't match")
+	}
+
+	// Get the session's created value to find when it was created.
+	created, err := fromSessionGetCreated(session)
+	if err != nil {
+		return err
+	}
+
+	// Check if the session has expired.
+	expirationTime := time.Unix(created, 0).Add(time.Duration(s.sessionMaxTTL) * time.Second)
+	if expirationTime.Before(time.Now()) {
+		return fmt.Errorf("session expired")
+	}
+	return nil
 }
 
 // ---
@@ -148,6 +165,20 @@ func fromSessionGetUserID(session *sessions.Session) (int64, error) {
 	return userID, nil
 }
 
+// fromSessionGetUserAgent returns the session's userAgent value as strng. It
+// will return an error if the value does not exist or if it is the wrong type.
+func fromSessionGetUserAgent(session *sessions.Session) (string, error) {
+	v, ok := session.Values["userAgent"]
+	if !ok {
+		return "", fmt.Errorf("session has no userAgent")
+	}
+	userAgent, ok := v.(string)
+	if !ok {
+		return "", fmt.Errorf("unexpected userAgent type")
+	}
+	return userAgent, nil
+}
+
 // ---
 
 func (s *server) serveLogin(w http.ResponseWriter, r *http.Request) *Error {
@@ -193,6 +224,7 @@ func (s *server) handleLoginGitHub(w http.ResponseWriter, r *http.Request) *Erro
 	}
 	session.Values["state"] = state
 	session.Values["created"] = time.Now().UTC().Unix()
+	session.Values["userAgent"] = r.UserAgent()
 	if err := session.Save(r, w); err != nil {
 		return E(err, "error saving session", http.StatusInternalServerError)
 	}
