@@ -38,16 +38,17 @@ func (s *server) auth(fn handler) handler {
 			return nil
 		}
 
-		// Get the session's created value to find when it was created.
-		t, ok := session.Values["created"]
-		if !ok {
-			log.Println("session has no created value")
+		// If the session is brand new, it means that the user has not logged
+		// in before.
+		if session.IsNew {
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return nil
 		}
-		created, ok := t.(int64)
-		if !ok {
-			log.Println("unexpected created type")
+
+		// Get the session's created value to find when it was created.
+		created, err := fromSessionGetCreated(session)
+		if err != nil {
+			log.Println(err)
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return nil
 		}
@@ -65,15 +66,9 @@ func (s *server) auth(fn handler) handler {
 		}
 
 		// Get the user's ID stored in the session.
-		v, ok := session.Values["userID"]
-		if !ok {
-			log.Println("session has no userID")
-			http.Redirect(w, r, "/login", http.StatusFound)
-			return nil
-		}
-		userID, ok := v.(int64)
-		if !ok {
-			log.Println("unexpected userID type")
+		userID, err := fromSessionGetUserID(session)
+		if err != nil {
+			log.Println(err)
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return nil
 		}
@@ -112,6 +107,36 @@ func fromContextGetUser(ctx context.Context) (*petfind.User, bool) {
 // newContextWithUser adds User to the context.
 func newContextWithUser(ctx context.Context, user *petfind.User) context.Context {
 	return context.WithValue(ctx, userContextKey, user)
+}
+
+// -- Helper functions to retrieve session values.
+
+// fromSessionGetCreated returns the session's created value as int64. It will
+// return an error if the value does not exist or if it is the wrong type.
+func fromSessionGetCreated(session *sessions.Session) (int64, error) {
+	v, ok := session.Values["created"]
+	if !ok {
+		return 0, fmt.Errorf("session has no created value")
+	}
+	created, ok := v.(int64)
+	if !ok {
+		return 0, fmt.Errorf("unexpected created type")
+	}
+	return created, nil
+}
+
+// fromSessionGetUserID returns the session's userID value as int64. It will
+// return an error if the value does not exist or if it is the wrong type.
+func fromSessionGetUserID(session *sessions.Session) (int64, error) {
+	v, ok := session.Values["userID"]
+	if !ok {
+		return 0, fmt.Errorf("session has no userID")
+	}
+	userID, ok := v.(int64)
+	if !ok {
+		return 0, fmt.Errorf("unexpected userID type")
+	}
+	return userID, nil
 }
 
 // ---
