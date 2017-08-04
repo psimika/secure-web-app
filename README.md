@@ -45,6 +45,11 @@ In order to deploy to Heroku for the first time we need these steps:
 
     heroku addons:create heroku-postgresql:hobby-dev
 
+In order to attach a free redis store to our application (requires a verified
+account):
+
+    heroku addons:create heroku-redis:hobby-dev
+
 After that and each time we make a change on master branch:
 
     git push heroku master
