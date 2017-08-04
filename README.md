@@ -16,11 +16,22 @@ Then install and run with:
 
     go install -tags=heroku ./... && heroku local -e .env.local
 
-Alternatively, in order to run the heroku version without using the heroku command:
+Alternatively, in order to run the heroku version without using the heroku
+command:
 
     go install -tags=heroku ./...
 
     TMPL_PATH=web PORT=8080 DATABASE_URL="user=<db user> password=<db password> database=petfind" petfindserver
+
+In order to connect to the Postgres database assigned by Heroku, we can connect
+using:
+
+    heroku pg:psql
+
+If we do some changes in the database and we wish to restart the application,
+we can do so with:
+
+    heroku restart
 
 ## Deployment
 
