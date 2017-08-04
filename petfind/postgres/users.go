@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/psimika/secure-web-app/petfind"
@@ -64,14 +65,14 @@ func (db *store) GetUser(userID int64) (*petfind.User, error) {
 	return u, nil
 }
 
-func (db *store) PutGithubUser(githubID int64, login, name, email string) (*petfind.User, error) {
+func (db *store) PutGithubUser(githubID int64, login, name, email string) (user *petfind.User, err error) {
 	// A GitHub user might not have provided their name in their profile but
 	// every GitHub user has a login. So in the case they haven't provided a
 	// name we will use their login as a name instead.
 	if name == "" {
 		name = login
 	}
-	var user = &petfind.User{
+	user = &petfind.User{
 		GithubID: githubID,
 		Login:    login,
 		Name:     name,
@@ -98,7 +99,15 @@ func (db *store) PutGithubUser(githubID int64, login, name, email string) (*petf
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err != nil {
+			if rerr := tx.Rollback(); rerr != nil {
+				err = fmt.Errorf("rollback failed: %v: %v", rerr, err)
+			}
+			return
+		}
+		err = tx.Commit()
+	}()
 
 	err = tx.QueryRow(userUpdateStmt, githubID, login, name, email).Scan(&user.ID, &user.Created, &user.Updated)
 	if err == sql.ErrNoRows {
@@ -106,15 +115,9 @@ func (db *store) PutGithubUser(githubID int64, login, name, email string) (*petf
 		if err != nil {
 			return nil, err
 		}
-		if err = tx.Commit(); err != nil {
-			return nil, err
-		}
 		return user, nil
 	}
 	if err != nil {
-		return nil, err
-	}
-	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
 	return user, nil

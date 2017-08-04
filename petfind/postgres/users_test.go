@@ -53,7 +53,7 @@ func TestPutGithubUser(t *testing.T) {
 	githubID := int64(5)
 	got, err := s.PutGithubUser(githubID, "janedoe", "Jane Doe", "jane@doe.com")
 	if err != nil {
-		t.Fatalf("PutGithubUser for non existent user returned err:", err)
+		t.Fatal("PutGithubUser for non existent user returned err:", err)
 	}
 
 	// Save created time to check it was the same when we Put for a second time
