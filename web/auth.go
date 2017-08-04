@@ -21,7 +21,6 @@ type contextKey int
 
 const (
 	userContextKey contextKey = iota
-	sessionIDContextKey
 )
 
 // auth protects other handlers letting only logged in users access them. If
@@ -113,17 +112,6 @@ func fromContextGetUser(ctx context.Context) (*petfind.User, bool) {
 // newContextWithUser adds User to the context.
 func newContextWithUser(ctx context.Context, user *petfind.User) context.Context {
 	return context.WithValue(ctx, userContextKey, user)
-}
-
-// fromContextGetSessionID retrieves sessionID from the context.
-func fromContextGetSessionID(ctx context.Context) (string, bool) {
-	sessionID, ok := ctx.Value(sessionIDContextKey).(string)
-	return sessionID, ok
-}
-
-// newContextWithSessionID adds sessionID to the context.
-func newContextWithSessionID(ctx context.Context, sessionID string) context.Context {
-	return context.WithValue(ctx, sessionIDContextKey, sessionID)
 }
 
 // ---
