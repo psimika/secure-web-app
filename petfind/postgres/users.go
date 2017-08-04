@@ -9,9 +9,9 @@ import (
 
 func (db *store) CreateUser(u *petfind.User) error {
 	const userInsertStmt = `
-	INSERT INTO users(github_id, login, name, email, added)
+	INSERT INTO users(github_id, login, name, email, created)
 	VALUES ($1, $2, $3, $4, now())
-	RETURNING id, added
+	RETURNING id, created
 	`
 	stmt, err := db.Prepare(userInsertStmt)
 	if err != nil {
@@ -24,13 +24,13 @@ func (db *store) CreateUser(u *petfind.User) error {
 		}
 	}()
 	var id int64
-	var added time.Time
-	err = stmt.QueryRow(u.GithubID, u.Login, u.Name, u.Email).Scan(&id, &added)
+	var created time.Time
+	err = stmt.QueryRow(u.GithubID, u.Login, u.Name, u.Email).Scan(&id, &created)
 	if err != nil {
 		return err
 	}
 	u.ID = id
-	u.Added = added
+	u.Created = created
 	return nil
 }
 
@@ -42,7 +42,7 @@ func (db *store) GetUser(userID int64) (*petfind.User, error) {
 	  login,
 	  name,
 	  email,
-	  added
+	  created
 	FROM users
 	WHERE id = $1
 	`
@@ -53,7 +53,7 @@ func (db *store) GetUser(userID int64) (*petfind.User, error) {
 		&u.Login,
 		&u.Name,
 		&u.Email,
-		&u.Added,
+		&u.Created,
 	)
 	if err == sql.ErrNoRows {
 		return nil, petfind.ErrNotFound
@@ -72,7 +72,7 @@ func (db *store) GetUserByGithubID(userID int64) (*petfind.User, error) {
 	  login,
 	  name,
 	  email,
-	  added
+	  created
 	FROM users
 	WHERE github_id = $1
 	`
@@ -83,7 +83,7 @@ func (db *store) GetUserByGithubID(userID int64) (*petfind.User, error) {
 		&u.Login,
 		&u.Name,
 		&u.Email,
-		&u.Added,
+		&u.Created,
 	)
 	if err == sql.ErrNoRows {
 		return nil, petfind.ErrNotFound
@@ -102,7 +102,7 @@ func (db *store) GetUserBySessionID(sessionID string) (*petfind.User, error) {
 	  u.login,
 	  u.name,
 	  u.email,
-	  u.added
+	  u.created
 	FROM sessions s
 	  JOIN users u ON s.user_id = u.id
 	WHERE s.id = $1
@@ -115,7 +115,7 @@ func (db *store) GetUserBySessionID(sessionID string) (*petfind.User, error) {
 		&u.Login,
 		&u.Name,
 		&u.Email,
-		&u.Added,
+		&u.Created,
 	)
 	if err == sql.ErrNoRows {
 		return nil, petfind.ErrNotFound

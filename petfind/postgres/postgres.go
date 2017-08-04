@@ -41,7 +41,8 @@ func (db *store) MakeSchema() error {
 		name varchar(70),
 		login varchar(70),
 		email varchar(70),
-		added timestamp
+		created timestamptz,
+		updated timestamptz
 	)`
 	if _, err := db.Exec(users); err != nil {
 		return fmt.Errorf("error creating table users: %v", err)

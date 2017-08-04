@@ -38,7 +38,8 @@ type User struct {
 	Login    string
 	Name     string
 	Email    string
-	Added    time.Time
+	Created  time.Time
+	Updated  time.Time
 }
 
 // TODO(psimika): Useful article in case a custom type needs to be stored in
