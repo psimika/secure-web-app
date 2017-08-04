@@ -150,13 +150,6 @@ func (s *server) handleLogout(w http.ResponseWriter, r *http.Request) *Error {
 	return nil
 }
 
-type gitHubUser struct {
-	ID    int64  `json:"id"`
-	Login string `json:"login"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
 // handleLoginGitHub sends an oauth request to login with GitHub (Caserta
 // 2015).
 //
@@ -223,25 +216,14 @@ func (s *server) handleLoginGitHubCallback(w http.ResponseWriter, r *http.Reques
 	c := s.github.Client(context.Background(), token)
 
 	// Use the client to get the consented user's info from the GitHub API.
-	githubUser, err := getGitHubUser(c)
+	githubUser, err := getGithubUser(c)
 	if err != nil {
 		return E(err, "could not get user from GitHub API", http.StatusInternalServerError)
 	}
 
-	user, err := s.store.GetUserByGithubID(githubUser.ID)
-	// If the user is not found in our database we create them.
-	if err != nil && err == petfind.ErrNotFound {
-		user = &petfind.User{
-			Name:     githubUser.Name,
-			GithubID: githubUser.ID,
-			Login:    githubUser.Login,
-		}
-		if cerr := s.store.CreateUser(user); cerr != nil {
-			return E(cerr, "could not create user", http.StatusInternalServerError)
-		}
-	}
-	if err != nil && err != petfind.ErrNotFound {
-		return E(err, "could not retrieve user", http.StatusInternalServerError)
+	user, err := s.store.PutGithubUser(githubUser)
+	if err != nil {
+		return E(err, "error storing github user", http.StatusInternalServerError)
 	}
 
 	session.Values["userID"] = user.ID
@@ -252,12 +234,13 @@ func (s *server) handleLoginGitHubCallback(w http.ResponseWriter, r *http.Reques
 	return nil
 }
 
-func getGitHubUser(client *http.Client) (*gitHubUser, error) {
+func getGithubUser(client *http.Client) (*petfind.GithubUser, error) {
 	resp, err := client.Get("https://api.github.com/user")
 	if err != nil {
 		return nil, err
 	}
-	user := new(gitHubUser)
+
+	user := new(petfind.GithubUser)
 	if err := json.NewDecoder(resp.Body).Decode(user); err != nil {
 		return nil, fmt.Errorf("could not decode user: %v", err)
 	}

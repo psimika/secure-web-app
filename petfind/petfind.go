@@ -24,7 +24,7 @@ type Store interface {
 
 	CreateUser(*User) error
 	GetUser(userID int64) (*User, error)
-	PutGithubUser(githubID int64, name, login, email string) (*User, error)
+	PutGithubUser(*GithubUser) (*User, error)
 	GetUserByGithubID(githubID int64) (*User, error)
 
 	MakeSchema() error
@@ -40,6 +40,15 @@ type User struct {
 	Email    string
 	Created  time.Time
 	Updated  time.Time
+}
+
+// GithubUser holds the data that we need to retrieve from a user's GitHub
+// account with their permission.
+type GithubUser struct {
+	ID    int64  `json:"id"`
+	Login string `json:"login"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 
 // TODO(psimika): Useful article in case a custom type needs to be stored in

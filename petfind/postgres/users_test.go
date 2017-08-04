@@ -50,8 +50,13 @@ func TestPutGithubUser(t *testing.T) {
 
 	// We Put the GitHub user for the first time. The user does not exist so we
 	// expect Put to create the user.
-	githubID := int64(5)
-	got, err := s.PutGithubUser(githubID, "janedoe", "Jane Doe", "jane@doe.com")
+	ghu := &petfind.GithubUser{
+		ID:    5,
+		Login: "janedoe",
+		Name:  "Jane Doe",
+		Email: "jane@doe.com",
+	}
+	got, err := s.PutGithubUser(ghu)
 	if err != nil {
 		t.Fatal("PutGithubUser for non existent user returned err:", err)
 	}
@@ -65,7 +70,7 @@ func TestPutGithubUser(t *testing.T) {
 
 	want := &petfind.User{
 		ID:       1, // A newly created user should get ID 1 from Postgres.
-		GithubID: githubID,
+		GithubID: 5,
 		Login:    "janedoe",
 		Name:     "Jane Doe",
 		Email:    "jane@doe.com",
@@ -77,7 +82,13 @@ func TestPutGithubUser(t *testing.T) {
 	// Attempt to Put again the github User. The GitHub user should have been
 	// already been created from the previous run and we now expect the values
 	// to be updated.
-	got, err = s.PutGithubUser(githubID, "jane", "Jane", "jane@doe.com")
+	ghu = &petfind.GithubUser{
+		ID:    5,
+		Login: "jane", // changed
+		Name:  "Jane", // changed
+		Email: "jane@doe.com",
+	}
+	got, err = s.PutGithubUser(ghu)
 	if err != nil {
 		t.Fatal("PutGithubUser for existing user returned err:", err)
 	}
@@ -87,7 +98,7 @@ func TestPutGithubUser(t *testing.T) {
 
 	want = &petfind.User{
 		ID:       1, // ID stays the same as we are doing an update.
-		GithubID: githubID,
+		GithubID: 5,
 		Login:    "jane",
 		Name:     "Jane",
 		Email:    "jane@doe.com",
@@ -106,8 +117,13 @@ func TestPutGithubUser_emptyName(t *testing.T) {
 	s := setup(t)
 	defer teardown(t, s)
 
-	githubID := int64(5)
-	u, err := s.PutGithubUser(githubID, "janedoe", "", "")
+	githubUser := &petfind.GithubUser{
+		ID:    5,
+		Login: "janedoe",
+		Name:  "",
+		Email: "",
+	}
+	u, err := s.PutGithubUser(githubUser)
 	if err != nil {
 		t.Fatal("PutGithubUser with empty name returned err:", err)
 	}

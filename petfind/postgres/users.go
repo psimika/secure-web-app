@@ -65,18 +65,12 @@ func (db *store) GetUser(userID int64) (*petfind.User, error) {
 	return u, nil
 }
 
-func (db *store) PutGithubUser(githubID int64, login, name, email string) (user *petfind.User, err error) {
+func (db *store) PutGithubUser(ghu *petfind.GithubUser) (u *petfind.User, err error) {
 	// A GitHub user might not have provided their name in their profile but
 	// every GitHub user has a login. So in the case they haven't provided a
 	// name we will use their login as a name instead.
-	if name == "" {
-		name = login
-	}
-	user = &petfind.User{
-		GithubID: githubID,
-		Login:    login,
-		Name:     name,
-		Email:    email,
+	if ghu.Name == "" {
+		ghu.Name = ghu.Login
 	}
 	const (
 		userUpdateStmt = `
@@ -86,12 +80,12 @@ func (db *store) PutGithubUser(githubID int64, login, name, email string) (user 
 	  email = $4,
 	  updated = now()
 	WHERE github_id = $1
-	RETURNING id, created, updated
+	RETURNING id, github_id, login, name, email, created, updated
 	`
 		userInsertStmt = `
 	INSERT INTO users(github_id, login, name, email, created, updated)
 	VALUES ($1, $2, $3, $4, now(), now())
-	RETURNING id, created, updated
+	RETURNING id, github_id, login, name, email, created, updated
 	`
 	)
 
@@ -109,18 +103,21 @@ func (db *store) PutGithubUser(githubID int64, login, name, email string) (user 
 		err = tx.Commit()
 	}()
 
-	err = tx.QueryRow(userUpdateStmt, githubID, login, name, email).Scan(&user.ID, &user.Created, &user.Updated)
+	u = new(petfind.User)
+	err = tx.QueryRow(userUpdateStmt, ghu.ID, ghu.Login, ghu.Name, ghu.Email).
+		Scan(&u.ID, &u.GithubID, &u.Login, &u.Name, &u.Email, &u.Created, &u.Updated)
 	if err == sql.ErrNoRows {
-		err = tx.QueryRow(userInsertStmt, githubID, login, name, email).Scan(&user.ID, &user.Created, &user.Updated)
+		err = tx.QueryRow(userInsertStmt, ghu.ID, ghu.Login, ghu.Name, ghu.Email).
+			Scan(&u.ID, &u.GithubID, &u.Login, &u.Name, &u.Email, &u.Created, &u.Updated)
 		if err != nil {
 			return nil, err
 		}
-		return user, nil
+		return u, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	return user, nil
+	return u, nil
 }
 
 func (db *store) GetUserByGithubID(userID int64) (*petfind.User, error) {
