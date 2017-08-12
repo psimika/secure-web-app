@@ -11,6 +11,7 @@ import (
 
 	"github.com/boj/redistore"
 	"github.com/garyburd/redigo/redis"
+	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 	_ "github.com/lib/pq"
 
@@ -55,9 +56,11 @@ func main() {
 		redisMaxIdle  = getenvInt(10, "REDIS_MAX_IDLE")
 		hashKeyStr    = getenvString("", "HASH_KEY")
 		blockKeyStr   = getenvString("", "BLOCK_KEY")
+		csrfKeyStr    = getenvString("", "CSRF_KEY")
 	)
 	hashKey := validHashKey(hashKeyStr)
 	blockKey := validBlockKey(blockKeyStr)
+	csrfKey := validCSRFKey(csrfKeyStr)
 
 	if databaseURL == "" {
 		log.Fatal("No database URL provided, exiting...")
@@ -82,11 +85,14 @@ func main() {
 		MaxAge:   sessionTTL,
 	}
 
+	CSRF := csrf.Protect(csrfKey)
+
 	handlers, err := web.NewServer(
 		store,
 		sessionStore,
 		sessionTTL,
 		sessionMaxTTL,
+		CSRF,
 		tmplPath,
 		githubID,
 		githubSecret)
