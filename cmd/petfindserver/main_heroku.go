@@ -87,8 +87,6 @@ func main() {
 		sessionStore,
 		sessionTTL,
 		sessionMaxTTL,
-		hashKey,
-		blockKey,
 		tmplPath,
 		githubID,
 		githubSecret)

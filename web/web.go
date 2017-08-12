@@ -74,8 +74,6 @@ func NewServer(
 	sessionStore sessions.Store,
 	sessionTTL int,
 	sessionMaxTTL int,
-	hashKey []byte,
-	blockKey []byte,
 	CSRF func(http.Handler) http.Handler,
 	templatePath string,
 	githubID string,

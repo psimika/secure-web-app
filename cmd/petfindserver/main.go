@@ -91,8 +91,6 @@ func main() {
 		sessionStore,
 		*sessionTTL,
 		*sessionMaxTTL,
-		hashKey,
-		blockKey,
 		CSRF,
 		*tmplPath,
 		*githubID,
