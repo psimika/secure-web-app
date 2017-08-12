@@ -4,6 +4,13 @@ Implementation of a secure web application.
 
 ## Development
 
+### Testing
+
+To run the database tests and see their test coverage, cd to `petfind/postgres`
+and use this command:
+
+    go test -tags=db -pass '<db password>' -coverprofile=cover.out -covermode=count && go tool cover -html=cover.out
+
 ### Running the app locally using Heroku
 
 Create a .env.local file with the following key value pairs:
