@@ -63,6 +63,11 @@ type tmpl struct {
 }
 
 // NewServer initializes and returns a new HTTP server.
+//
+// sessionTTL is used to extend the session's idle timeout.
+//
+// sessionMaxTTL is used to check if a session has expired by surpassing its
+// absolute timeout.
 func NewServer(
 	store petfind.Store,
 	sessionStore sessions.Store,
