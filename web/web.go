@@ -11,6 +11,7 @@ import (
 	"golang.org/x/oauth2/github"
 
 	gorillactx "github.com/gorilla/context"
+	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 	"github.com/psimika/secure-web-app/petfind"
 )
@@ -75,6 +76,7 @@ func NewServer(
 	sessionMaxTTL int,
 	hashKey []byte,
 	blockKey []byte,
+	CSRF func(http.Handler) http.Handler,
 	templatePath string,
 	githubID string,
 	githubSecret string,
@@ -93,7 +95,7 @@ func NewServer(
 		sessionTTL:    sessionTTL,
 		sessionMaxTTL: sessionMaxTTL,
 	}
-	s.handlers = gorillactx.ClearHandler(s.mux)
+	s.handlers = gorillactx.ClearHandler(CSRF(s.mux))
 	s.mux.Handle("/", handler(s.homeHandler))
 	s.mux.Handle("/form", handler(s.searchReplyHandler))
 	s.mux.Handle("/pets", handler(s.servePets))
@@ -170,7 +172,12 @@ func (s *server) serveAddPet(w http.ResponseWriter, r *http.Request) *Error {
 		return E(nil, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 	}
 
-	err := s.tmpl.addPet.Execute(w, user)
+	err := s.tmpl.addPet.Execute(w,
+		map[string]interface{}{
+			"user":           user,
+			csrf.TemplateTag: csrf.TemplateField(r),
+		},
+	)
 	if err != nil {
 		return E(err, "could not serve addPet", http.StatusInternalServerError)
 	}

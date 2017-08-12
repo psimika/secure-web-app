@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/boj/redistore"
+	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 	_ "github.com/lib/pq"
 
@@ -34,6 +35,7 @@ func main() {
 		githubSecret  = flag.String("githubsecret", "", "GitHub Client Secret used for Login with GitHub")
 		hashKeyStr    = flag.String("hashkey", "", "random key (32 or 64 bytes) used to sign/authenticate values using HMAC")
 		blockKeyStr   = flag.String("blockkey", "", "random key (32 bytes) used to encrypt values using AES-256")
+		csrfKeyStr    = flag.String("csrfkey", "", "random key (32 bytes) used to create CSRF tokens")
 		redisAddr     = flag.String("redis", ":6379", "Redis address to connect to and store sessions")
 		redisPass     = flag.String("redispass", "", "Redis password if needed")
 		redisMaxIdle  = flag.Int("redismaxidle", 10, "maximum number of idle Redis connections")
@@ -50,6 +52,7 @@ func main() {
 	}
 	hashKey := validHashKey(*hashKeyStr)
 	blockKey := validBlockKey(*blockKeyStr)
+	csrfKey := validCSRFKey(*csrfKeyStr)
 
 	if *dataSource == "" {
 		log.Fatal("No database datasource provided, exiting...")
@@ -77,8 +80,10 @@ func main() {
 		Secure:   true,
 		MaxAge:   *sessionTTL,
 	}
+	CSRF := csrf.Protect(csrfKey)
 	if *insecureHTTP {
 		sessionStore.Options.Secure = false
+		CSRF = csrf.Protect(csrfKey, csrf.Secure(false))
 	}
 
 	appHandlers, err := web.NewServer(
@@ -88,6 +93,7 @@ func main() {
 		*sessionMaxTTL,
 		hashKey,
 		blockKey,
+		CSRF,
 		*tmplPath,
 		*githubID,
 		*githubSecret,

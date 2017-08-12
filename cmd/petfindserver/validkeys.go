@@ -44,3 +44,15 @@ func validBlockKey(key string) []byte {
 	}
 	return blockKey
 }
+
+func validCSRFKey(key string) []byte {
+	if key == "" {
+		log.Println("No CSRF key provided, exiting...")
+		log.Fatal("The CSRF key should be 32-bytes long and persist across application restarts. Use -csrfkey='<strong random key>'.")
+	}
+	csrfKey := []byte(key)
+	if len(csrfKey) != 32 {
+		log.Fatal("CSRF key should be 32 bytes, exiting...")
+	}
+	return csrfKey
+}

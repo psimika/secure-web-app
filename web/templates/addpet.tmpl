@@ -1,12 +1,13 @@
 {{define "content"}}
   {{if .}}
-    Hello {{.Name}}
+    Hello {{.user.Name}}
     <form method="POST" action="/logout">
       <input type="submit" value="Logout">
     </form>
   {{end}}
-  <form action="/pets/add/submit" method="POST">
+  <form action="/pets/add/submit" method="POST" accept-charset="UTF-8">
 	  <input name="name">
+    {{ .csrfField }}
 	  <input type="submit" value="Add new pet">
   </form>
 {{end}}
