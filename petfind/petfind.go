@@ -5,16 +5,78 @@ import (
 	"time"
 )
 
-// ErrNotFound is returned whenever an item does not exist in the Store.
-var ErrNotFound = errors.New("item not found")
+type PetType int64
+
+const (
+	UnknownType PetType = iota
+	Cat
+	Dog
+)
+
+var types = [...]string{
+	"Unknown",
+	"Cat",
+	"Dog",
+}
+
+// String returns the English name of the pet's type ("Cat", "Dog", ...).
+func (p PetType) String() string { return types[p] }
+
+type PetSize int64
+
+const (
+	UnknownSize PetSize = iota
+	Small
+	Medium
+	Large
+	Huge
+)
+
+var sizes = [...]string{
+	"Unknown",
+	"Small",
+	"Medium",
+	"Large",
+	"Huge",
+}
+
+// String returns the English name of the pet's size ("Small", "Medium", ...).
+func (p PetSize) String() string { return sizes[p] }
+
+type PetAge int64
+
+const (
+	UnknownAge PetAge = iota
+	Baby
+	Young
+	Adult
+	Senior
+)
+
+var ages = [...]string{
+	"Unknown",
+	"Baby",
+	"Young",
+	"Adult",
+	"Senior",
+}
+
+// String returns the English name of the pet's age ("Baby", "Young", ...).
+func (p PetAge) String() string { return ages[p] }
 
 // Pet holds information about each pet of the application.
 type Pet struct {
-	ID    int64
-	Name  string
-	Age   int
-	Added time.Time
+	ID      int64
+	Name    string
+	Age     PetAge
+	Type    PetType
+	Size    PetSize
+	Created time.Time
+	Updated time.Time
 }
+
+// ErrNotFound is returned whenever an item does not exist in the Store.
+var ErrNotFound = errors.New("item not found")
 
 // Store describes the operations the application needs for persisting and
 // retrieving data.

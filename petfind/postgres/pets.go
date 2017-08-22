@@ -1,16 +1,14 @@
 package postgres
 
 import (
-	"time"
-
 	"github.com/psimika/secure-web-app/petfind"
 )
 
 func (db *store) AddPet(p *petfind.Pet) error {
 	const petInsertStmt = `
-	INSERT INTO pets(name, added)
-	VALUES ($1, now())
-	RETURNING id, added
+	INSERT INTO pets(name, age, size, type, created, updated)
+	VALUES ($1, $2, $3, $4, now(), now())
+	RETURNING id, created, updated
 	`
 	stmt, err := db.Prepare(petInsertStmt)
 	if err != nil {
@@ -22,20 +20,23 @@ func (db *store) AddPet(p *petfind.Pet) error {
 			return
 		}
 	}()
-	var id int64
-	var added time.Time
-	err = stmt.QueryRow(p.Name).Scan(&id, &added)
+	err = stmt.QueryRow(p.Name, p.Age, p.Size, p.Type).Scan(&p.ID, &p.Created, &p.Updated)
 	if err != nil {
 		return err
 	}
-	p.ID = id
-	p.Added = added
 	return nil
 }
 
 func (db *store) GetAllPets() ([]petfind.Pet, error) {
 	const petGetAllQuery = `
-	SELECT *
+	SELECT
+	  id,
+	  name,
+	  age,
+	  type,
+	  size,
+	  created,
+	  updated
 	FROM pets
 	`
 	rows, err := db.Query(petGetAllQuery)
@@ -52,7 +53,15 @@ func (db *store) GetAllPets() ([]petfind.Pet, error) {
 	pets := make([]petfind.Pet, 0)
 	for rows.Next() {
 		var p petfind.Pet
-		if err := rows.Scan(&p.ID, &p.Name, &p.Added); err != nil {
+		if err := rows.Scan(
+			&p.ID,
+			&p.Name,
+			&p.Age,
+			&p.Type,
+			&p.Size,
+			&p.Created,
+			&p.Updated,
+		); err != nil {
 			return nil, err
 		}
 		pets = append(pets, p)

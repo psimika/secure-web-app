@@ -30,7 +30,11 @@ func (db *store) MakeSchema() error {
 	const pets = `CREATE TABLE IF NOT EXISTS pets (
 		id bigserial PRIMARY KEY,
 		name varchar(70),
-		added timestamp
+		age integer,
+		type integer,
+		size integer,
+		created timestamptz,
+		updated timestamptz
 	)`
 	if _, err := db.Exec(pets); err != nil {
 		return fmt.Errorf("error creating table pets: %v", err)
