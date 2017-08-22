@@ -52,12 +52,14 @@ type server struct {
 	sessions      sessions.Store
 	sessionTTL    int
 	sessionMaxTTL int
+	favicons      map[string]string
 }
 
 // tmpl contains the server's templates required to render its pages.
 type tmpl struct {
 	home        *template.Template
 	addPet      *template.Template
+	search      *template.Template
 	searchReply *template.Template
 	showPets    *template.Template
 	login       *template.Template
@@ -94,7 +96,7 @@ func NewServer(
 		sessionMaxTTL: sessionMaxTTL,
 	}
 	s.handlers = gorillactx.ClearHandler(CSRF(s.mux))
-	s.mux.Handle("/", handler(s.homeHandler))
+	s.mux.Handle("/", handler(s.serveHome))
 	s.mux.Handle("/form", handler(s.searchReplyHandler))
 	s.mux.Handle("/pets", handler(s.servePets))
 	s.mux.Handle("/pets/add", s.auth(s.serveAddPet))
@@ -103,9 +105,39 @@ func NewServer(
 	s.mux.Handle("/login/github", handler(s.handleLoginGitHub))
 	s.mux.Handle("/login/github/cb", handler(s.handleLoginGitHubCallback))
 	s.mux.Handle("/logout", s.auth(s.handleLogout))
+
+	fs := http.FileServer(http.Dir(filepath.Join(templatePath, "assets")))
+	s.mux.Handle("/assets/", http.StripPrefix("/assets", cacheAssets(fs)))
+	s.favicons = prepareFavicons(templatePath)
 	return s, nil
 }
 
+func cacheAssets(h http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Cache-Control", "max-age=31536000")
+		h.ServeHTTP(w, r)
+	}
+}
+
+func prepareFavicons(assetsPath string) map[string]string {
+	var f = [...]string{
+		"android-chrome-192x192.png",
+		"android-chrome-512x512.png",
+		"apple-touch-icon.png",
+		"browserconfig.xml",
+		"favicon.ico",
+		"favicon-16x16.png",
+		"favicon-32x32.png",
+		"manifest.json",
+		"mstile-150x150.png",
+		"safari-pinned-tab.svg",
+	}
+	favicons := make(map[string]string)
+	for i := 0; i < len(f); i++ {
+		favicons["/"+f[i]] = filepath.Join(assetsPath, "assets", "favicon", f[i])
+	}
+	return favicons
+}
 func newGitHubOAuthConfig(clientID, clientSecret string) *oauth2.Config {
 	return &oauth2.Config{
 		ClientID:     clientID,
@@ -120,11 +152,15 @@ func newGitHubOAuthConfig(clientID, clientSecret string) *oauth2.Config {
 }
 
 func parseTemplates(dir string) (*tmpl, error) {
-	homeTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "search.tmpl"))
+	homeTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "home.tmpl"))
 	if err != nil {
 		return nil, err
 	}
 	addPetTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "addpet.tmpl"))
+	if err != nil {
+		return nil, err
+	}
+	searchTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "search.tmpl"))
 	if err != nil {
 		return nil, err
 	}
@@ -140,6 +176,7 @@ func parseTemplates(dir string) (*tmpl, error) {
 	t := &tmpl{
 		home:        homeTmpl,
 		addPet:      addPetTmpl,
+		search:      searchTmpl,
 		searchReply: searchReplyTmpl,
 		showPets:    showPetsTmpl,
 		login:       loginTmpl,
@@ -157,7 +194,14 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.handlers.ServeHTTP(w, r)
 }
 
-func (s *server) homeHandler(w http.ResponseWriter, r *http.Request) *Error {
+func (s *server) serveHome(w http.ResponseWriter, r *http.Request) *Error {
+	// Serve favicons.
+	if fname, ok := s.favicons[r.URL.Path]; ok {
+		w.Header().Add("Cache-Control", "max-age=31536000")
+		http.ServeFile(w, r, fname)
+		return nil
+	}
+
 	if err := s.tmpl.home.Execute(w, nil); err != nil {
 		return E(err, "could not serve home", http.StatusInternalServerError)
 	}
