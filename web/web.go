@@ -120,6 +120,7 @@ func cacheAssets(h http.Handler) http.HandlerFunc {
 }
 
 func prepareFavicons(assetsPath string) map[string]string {
+	// Different favicon versions for diffent devices as suggested by Bernard (2015).
 	var f = [...]string{
 		"android-chrome-192x192.png",
 		"android-chrome-512x512.png",

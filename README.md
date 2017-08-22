@@ -184,6 +184,8 @@ Anicas, M. (2016). *Initial Server Setup with Ubuntu 16.04* [online] Available a
 
 Beams, C. (2014). *How to Write a Git Commit Message* [online] Available at: https://chris.beams.io/posts/git-commit/ [Accessed: June 28 2017]
 
+Bernard, P. (2015) *Favicon – Why you’re doing it wrong* [online] Available at: https://realfavicongenerator.net/blog/favicon-why-youre-doing-it-wrong/ [Accessed: August 22 2017]
+
 Bourgon, P. (2014). *Go: Best Practices for Production Environments* [online] Available at: http://peter.bourgon.org/go-in-production/#testing-and-validation [Accessed: July 18 2017]
 
 Caserta, P. (2015). *Go (Golang) OAuth for Facebook, Github, Twitter and Google Plus* [online] Available at: http://pierrecaserta.com/go-oauth-facebook-github-twitter-google-plus/ [Accessed: July 25 2017]
