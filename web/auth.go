@@ -288,6 +288,8 @@ func (s *server) handleLoginGitHubCallback(w http.ResponseWriter, r *http.Reques
 	if err := session.Save(r, w); err != nil {
 		return E(err, "error saving session", http.StatusInternalServerError)
 	}
+
+	http.Redirect(w, r, "/", http.StatusFound)
 	return nil
 }
 
