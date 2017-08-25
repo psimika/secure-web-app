@@ -96,7 +96,7 @@ func NewServer(
 		sessionMaxTTL: sessionMaxTTL,
 	}
 	s.handlers = gorillactx.ClearHandler(CSRF(s.mux))
-	s.mux.Handle("/", handler(s.serveHome))
+	s.mux.Handle("/", s.guest(s.serveHome))
 	s.mux.Handle("/form", handler(s.searchReplyHandler))
 	s.mux.Handle("/pets", handler(s.servePets))
 	s.mux.Handle("/pets/add", s.auth(s.serveAddPet))
@@ -203,10 +203,62 @@ func (s *server) serveHome(w http.ResponseWriter, r *http.Request) *Error {
 		return nil
 	}
 
-	if err := s.tmpl.home.Execute(w, nil); err != nil {
-		return E(err, "could not serve home", http.StatusInternalServerError)
+	return s.render(w, r, s.tmpl.home, nil)
+}
+
+func (s *server) render(w http.ResponseWriter, r *http.Request, tmpl *template.Template, data interface{}) *Error {
+	m := map[string]interface{}{
+		csrf.TemplateTag: csrf.TemplateField(r),
+	}
+
+	if data != nil {
+		m["data"] = data
+	}
+
+	user, _ := fromContextGetUser(r.Context())
+	if user != nil {
+		m["user"] = user
+	}
+
+	if err := tmpl.Execute(w, m); err != nil {
+		return E(err, fmt.Sprintf("could not serve %s", tmpl.Name()), http.StatusInternalServerError)
 	}
 	return nil
+}
+
+func (s *server) guest(fn handler) handler {
+	return func(w http.ResponseWriter, r *http.Request) *Error {
+		session, err := s.sessions.Get(r, sessionName)
+		if err != nil {
+			return E(err, "error getting guest session", http.StatusInternalServerError)
+		}
+
+		var user *petfind.User
+		// Get the user's ID stored in the session.
+		userID, err := fromSessionGetUserID(session)
+		if err == nil {
+			// Get the user from the database based on the session's user ID.
+			user, err = s.store.GetUser(userID)
+			if err != nil {
+				return E(err, "error getting user from guest session", http.StatusInternalServerError)
+			}
+		}
+
+		// Extend session's idle timeout.
+		session.Options.MaxAge = s.sessionTTL
+		if err = sessions.Save(r, w); err != nil {
+			return E(err, "error extending guest session", http.StatusInternalServerError)
+		}
+
+		if user != nil {
+			// Put user in the context so that the next handler can access it.
+			ctx := newContextWithUser(r.Context(), user)
+			fn(w, r.WithContext(ctx))
+		} else {
+			fn(w, r)
+		}
+		return nil
+	}
 }
 
 func (s *server) serveAddPet(w http.ResponseWriter, r *http.Request) *Error {
