@@ -3,6 +3,7 @@
     Hello {{.user.Name}}
     <form method="POST" action="/logout">
       <input type="submit" value="Logout">
+      {{ .csrfField }}
     </form>
   {{end}}
   <form action="/pets/add/submit" method="POST" accept-charset="UTF-8">
