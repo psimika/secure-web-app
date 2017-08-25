@@ -197,8 +197,9 @@ func (s *server) handleLogout(w http.ResponseWriter, r *http.Request) *Error {
 	if err != nil {
 		return E(err, "error getting session for logout", http.StatusInternalServerError)
 	}
+
 	session.Options.MaxAge = -1
-	if err = sessions.Save(r, w); err != nil {
+	if err = session.Save(r, w); err != nil {
 		return E(err, "error deleting session for logout", http.StatusInternalServerError)
 	}
 
