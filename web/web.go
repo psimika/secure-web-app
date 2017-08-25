@@ -153,7 +153,7 @@ func newGitHubOAuthConfig(clientID, clientSecret string) *oauth2.Config {
 }
 
 func parseTemplates(dir string) (*tmpl, error) {
-	homeTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "home.tmpl"))
+	homeTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "navbar.tmpl"), filepath.Join(dir, "home.tmpl"))
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func parseTemplates(dir string) (*tmpl, error) {
 	if err != nil {
 		return nil, err
 	}
-	loginTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "login.tmpl"))
+	loginTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "navbar.tmpl"), filepath.Join(dir, "login.tmpl"))
 	t := &tmpl{
 		home:        homeTmpl,
 		addPet:      addPetTmpl,

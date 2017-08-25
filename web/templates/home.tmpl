@@ -1,0 +1,54 @@
+{{define "content"}}
+  <div class="container">
+    <div class="row">
+      <div class="col">
+        <div class="card bg-light my-2">
+          <div class="card-header">Search for a pet</div>
+          <div class="card-body">
+            <form action="/form" method="GET" class="form-inline">
+              <label for="location" class="sr-only">Location</label>
+	            <input id="location" type="search" class="form-control mb-2 mr-sm-2 mb-sm-0" name="location" placeholder="Enter a location">
+
+              <label for="type" class="sr-only">Type</label>
+              <select id="type" class="form-control mb-2 mr-sm-2 mb-sm-0">
+                <option value="" selected disabled hidden>Choose type</option>
+                <option value="1">Cat</option>
+                <option value="2">Dog</option>
+              </select>
+
+              <label for="age" class="sr-only">Age</label>
+              <select id="age" class="form-control mb-2 mr-sm-2 mb-sm-0">
+                <option value="" selected disabled hidden>Choose age</option>
+                <option value="1">Baby</option>
+                <option value="2">Young</option>
+                <option value="3">Adult</option>
+                <option value="4">Senior</option>
+              </select>
+
+              <label for="gender" class="sr-only">Gender</label>
+              <select id="gender" class="form-control mb-2 mr-sm-2 mb-sm-0">
+                <option value="" selected disabled hidden>Choose gender</option>
+                <option value="1">Male</option>
+                <option value="2">Female</option>
+              </select>
+              <button type="submit" class="btn btn-outline-success">Search</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <div class="card" style="width: 20rem;">
+          <div class="card-header">Featured</div>
+          <img class="card-img-top" src="http://www.cats.org.uk/uploads/images/featurebox_sidebar_kids/grief-and-loss.jpg" alt="Card image cap">
+          <div class="card-body">
+            <h4 class="card-title">Zazzles</h4>
+            <p class="card-text">Too zazzy to be named Hermann von Helmholtz.</p>
+            <a href="#" class="btn btn-success">View pet</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{{end}}
