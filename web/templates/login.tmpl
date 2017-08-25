@@ -1,8 +1,21 @@
 {{define "content"}}
-  <form method="POST" action="/login">
-    <input type="text" name="username" placeholder="Username">
-    <input type="password" name="password" placeholder="Password">
-    <input type="submit" value="Login">
-    <a href="/login/github">Login with GitHub</a>
-  <form>
+  <div class="container">
+    <div class="row">
+      <div class="col">
+        <div class="card my-4">
+          <div class="card-header">
+            Login
+          </div>
+          <div class="card-body">
+            <h4 class="card-title">Choose a way to login</h4>
+            <p class="card-text">This application will only access your public information and your email.</p>
+            <form method="POST" action="/login">
+              <a href="/login/github" class="btn btn-lg btn-outline-dark"><i class="fa fa-github" aria-hidden="true"></i> Login with GitHub</a>
+              <a href="/login/facebook" class="btn btn-lg btn-outline-primary"><i class="fa fa-facebook-official" aria-hidden="true"></i> Login with Facebook</a>
+            <form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 {{end}}
