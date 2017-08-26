@@ -201,11 +201,7 @@ func fromSessionGetString(session *sessions.Session, key string) (string, error)
 // ---
 
 func (s *server) serveLogin(w http.ResponseWriter, r *http.Request) *Error {
-
-	if err := s.templates.login.Execute(w, nil); err != nil {
-		return E(err, "error rendering login", http.StatusInternalServerError)
-	}
-	return nil
+	return s.render(w, r, s.templates.login, nil)
 }
 
 func (s *server) handleLogout(w http.ResponseWriter, r *http.Request) *Error {
