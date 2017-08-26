@@ -30,6 +30,7 @@ const (
 // the session ID is not found in the context, the handler redirects to /login.
 func (s *server) auth(fn handler) handler {
 	return func(w http.ResponseWriter, r *http.Request) *Error {
+		log.Println("r.URL.Path:", r.URL.Path)
 		log.Println("r.Referer():", r.Referer())
 		log.Println("r.RemoteAddr:", r.RemoteAddr)
 		log.Println("r.Header.Get(\"X-Forwarded-For\"):", r.Header.Get("X-Forwarded-For"))
@@ -41,20 +42,16 @@ func (s *server) auth(fn handler) handler {
 			return nil
 		}
 
+		// Store the original URL path the user was trying to access so we can
+		// redirect to that later after a successful login.
+		session.Values["redirectPath"] = r.URL.Path
+		if err = session.Save(r, w); err != nil {
+			return E(err, "error storing redirectPath in session", http.StatusInternalServerError)
+		}
+
 		// If the session is brand new, it means that the user has not logged
 		// in before.
 		if session.IsNew {
-			http.Redirect(w, r, "/login", http.StatusFound)
-			return nil
-		}
-
-		// If the session is not valid then we delete it.
-		if err = s.validateSession(r, session); err != nil {
-			log.Println(err)
-			session.Options.MaxAge = -1
-			if err = sessions.Save(r, w); err != nil {
-				return E(err, "error deleting invalid session", http.StatusInternalServerError)
-			}
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return nil
 		}
@@ -71,6 +68,17 @@ func (s *server) auth(fn handler) handler {
 		user, err := s.store.GetUser(userID)
 		if err != nil {
 			return E(err, "error getting user", http.StatusInternalServerError)
+		}
+
+		// If the session is not valid then we delete it.
+		if err = s.validateSession(r, session); err != nil {
+			log.Println(err)
+			session.Options.MaxAge = -1
+			if err = sessions.Save(r, w); err != nil {
+				return E(err, "error deleting invalid session", http.StatusInternalServerError)
+			}
+			http.Redirect(w, r, "/login", http.StatusFound)
+			return nil
 		}
 
 		// Extend session's idle timeout.
@@ -165,23 +173,35 @@ func fromSessionGetUserID(session *sessions.Session) (int64, error) {
 	return userID, nil
 }
 
-// fromSessionGetUserAgent returns the session's userAgent value as strng. It
+// fromSessionGetUserAgent returns the session's userAgent value as string. It
 // will return an error if the value does not exist or if it is the wrong type.
 func fromSessionGetUserAgent(session *sessions.Session) (string, error) {
-	v, ok := session.Values["userAgent"]
+	return fromSessionGetString(session, "userAgent")
+}
+
+// fromSessionGetRedirectPath returns the path the user was trying to access as
+// string. It will return an error if the value does not exist or if it is the
+// wrong type.
+func fromSessionGetRedirectPath(session *sessions.Session) (string, error) {
+	return fromSessionGetString(session, "redirectPath")
+}
+
+func fromSessionGetString(session *sessions.Session, key string) (string, error) {
+	v, ok := session.Values[key]
 	if !ok {
-		return "", fmt.Errorf("session has no userAgent")
+		return "", fmt.Errorf("session has no %s", key)
 	}
-	userAgent, ok := v.(string)
+	strVal, ok := v.(string)
 	if !ok {
-		return "", fmt.Errorf("unexpected userAgent type")
+		return "", fmt.Errorf("unexpected %s type", key)
 	}
-	return userAgent, nil
+	return strVal, nil
 }
 
 // ---
 
 func (s *server) serveLogin(w http.ResponseWriter, r *http.Request) *Error {
+
 	if err := s.tmpl.login.Execute(w, nil); err != nil {
 		return E(err, "error rendering login", http.StatusInternalServerError)
 	}
@@ -290,7 +310,14 @@ func (s *server) handleLoginGitHubCallback(w http.ResponseWriter, r *http.Reques
 		return E(err, "error saving session", http.StatusInternalServerError)
 	}
 
-	http.Redirect(w, r, "/", http.StatusFound)
+	redirectPath, err := fromSessionGetRedirectPath(session)
+	if err != nil {
+		log.Println("no redirectPath in session")
+		http.Redirect(w, r, "/", http.StatusFound)
+		return nil
+	}
+	http.Redirect(w, r, redirectPath, http.StatusFound)
+
 	return nil
 }
 
