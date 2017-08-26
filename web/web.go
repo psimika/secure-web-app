@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"strconv"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
@@ -283,13 +284,39 @@ func (s *server) handleAddPet(w http.ResponseWriter, r *http.Request) *Error {
 	}
 
 	name := r.FormValue("name")
-	p := &petfind.Pet{Name: name}
+
+	age, err := formValueAge(r)
+	if err != nil {
+		return E(err, "bad age value", http.StatusBadRequest)
+	}
+	p := &petfind.Pet{Name: name, Age: age}
 	if err := s.store.AddPet(p); err != nil {
 		return E(err, "Error adding pet", http.StatusInternalServerError)
 	}
 
 	w.Write([]byte("pet added!"))
 	return nil
+}
+
+func formValueInt64(r *http.Request, key string) (int64, error) {
+	v := r.FormValue(key)
+	i, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("error parsing form value %q:%v", key, err)
+	}
+	return i, nil
+}
+
+func formValueAge(r *http.Request) (petfind.PetAge, error) {
+	age, err := formValueInt64(r, "age")
+	if err != nil {
+		return petfind.UnknownAge, err
+	}
+	// Validate age.
+	if age < 0 || age > 4 {
+		return petfind.UnknownAge, fmt.Errorf("invalid value for age")
+	}
+	return petfind.PetAge(age), nil
 }
 
 func (s *server) searchReplyHandler(w http.ResponseWriter, r *http.Request) *Error {

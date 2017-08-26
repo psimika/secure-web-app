@@ -90,6 +90,7 @@ type Pet struct {
 	Gender  PetGender
 	Created time.Time
 	Updated time.Time
+	Notes   string
 }
 
 // ErrNotFound is returned whenever an item does not exist in the Store.
