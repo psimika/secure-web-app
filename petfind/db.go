@@ -46,3 +46,16 @@ func (p *PetAge) Scan(value interface{}) error {
 	}
 	return fmt.Errorf("cannot scan PetAge value")
 }
+
+func (p PetGender) Value() (driver.Value, error) { return int64(p), nil }
+func (p *PetGender) Scan(value interface{}) error {
+	if value == nil {
+		*p = UnknownGender
+		return nil
+	}
+	if v, ok := value.(int64); ok {
+		*p = PetGender(v)
+		return nil
+	}
+	return fmt.Errorf("cannot scan PetGender value")
+}

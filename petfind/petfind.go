@@ -64,6 +64,22 @@ var ages = [...]string{
 // String returns the English name of the pet's age ("Baby", "Young", ...).
 func (p PetAge) String() string { return ages[p] }
 
+type PetGender int64
+
+const (
+	UnknownGender PetGender = iota
+	Male
+	Female
+)
+
+var genders = [...]string{
+	"Unknown",
+	"Male",
+	"Female",
+}
+
+func (p PetGender) String() string { return genders[p] }
+
 // Pet holds information about each pet of the application.
 type Pet struct {
 	ID      int64
@@ -71,6 +87,7 @@ type Pet struct {
 	Age     PetAge
 	Type    PetType
 	Size    PetSize
+	Gender  PetGender
 	Created time.Time
 	Updated time.Time
 }
