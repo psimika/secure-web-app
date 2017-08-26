@@ -9,12 +9,24 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
       <ul class="navbar-nav mr-auto">
-        <li class="nav-item active">
-          <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/pets/add">Give a pet</a>
-        </li>
+        {{if eq .nav "home"}}
+          <li class="nav-item active">
+            <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
+          </li>
+        {{else}}
+          <li class="nav-item">
+            <a class="nav-link" href="/">Home</a>
+          </li>
+        {{end}}
+        {{if eq .nav "add"}}
+          <li class="nav-item active">
+            <a class="nav-link" href="/pets/add">Give a pet <span class="sr-only">(current)</span></a>
+          </li>
+        {{else}}
+          <li class="nav-item">
+            <a class="nav-link" href="/pets/add">Give a pet</a>
+          </li>
+        {{end}}
       </ul>
       {{if .user}}
         <form method="POST" action="/logout"  class="form-inline my-2 my-lg-0">

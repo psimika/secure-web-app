@@ -47,7 +47,7 @@ type server struct {
 	handlers      http.Handler
 	mux           *http.ServeMux
 	store         petfind.Store
-	tmpl          *tmpl
+	templates     *templates
 	github        *oauth2.Config
 	sessions      sessions.Store
 	sessionTTL    int
@@ -55,14 +55,19 @@ type server struct {
 	favicons      map[string]string
 }
 
-// tmpl contains the server's templates required to render its pages.
+// templates contains the server's templates required to render its pages.
+type templates struct {
+	home        *tmpl
+	addPet      *tmpl
+	search      *tmpl
+	searchReply *tmpl
+	showPets    *tmpl
+	login       *tmpl
+}
+
 type tmpl struct {
-	home        *template.Template
-	addPet      *template.Template
-	search      *template.Template
-	searchReply *template.Template
-	showPets    *template.Template
-	login       *template.Template
+	*template.Template
+	nav string
 }
 
 // NewServer initializes and returns a new HTTP server.
@@ -89,7 +94,7 @@ func NewServer(
 	s := &server{
 		mux:           http.NewServeMux(),
 		store:         store,
-		tmpl:          t,
+		templates:     t,
 		github:        newGitHubOAuthConfig(githubID, githubSecret),
 		sessions:      sessionStore,
 		sessionTTL:    sessionTTL,
@@ -152,12 +157,12 @@ func newGitHubOAuthConfig(clientID, clientSecret string) *oauth2.Config {
 	}
 }
 
-func parseTemplates(dir string) (*tmpl, error) {
+func parseTemplates(dir string) (*templates, error) {
 	homeTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "navbar.tmpl"), filepath.Join(dir, "home.tmpl"))
 	if err != nil {
 		return nil, err
 	}
-	addPetTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "addpet.tmpl"))
+	addPetTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "navbar.tmpl"), filepath.Join(dir, "addpet.tmpl"))
 	if err != nil {
 		return nil, err
 	}
@@ -174,13 +179,13 @@ func parseTemplates(dir string) (*tmpl, error) {
 		return nil, err
 	}
 	loginTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "navbar.tmpl"), filepath.Join(dir, "login.tmpl"))
-	t := &tmpl{
-		home:        homeTmpl,
-		addPet:      addPetTmpl,
-		search:      searchTmpl,
-		searchReply: searchReplyTmpl,
-		showPets:    showPetsTmpl,
-		login:       loginTmpl,
+	t := &templates{
+		home:        &tmpl{homeTmpl, "home"},
+		addPet:      &tmpl{addPetTmpl, "add"},
+		search:      &tmpl{searchTmpl, "search"},
+		searchReply: &tmpl{searchReplyTmpl, ""},
+		showPets:    &tmpl{showPetsTmpl, ""},
+		login:       &tmpl{loginTmpl, ""},
 	}
 	return t, err
 }
@@ -203,12 +208,13 @@ func (s *server) serveHome(w http.ResponseWriter, r *http.Request) *Error {
 		return nil
 	}
 
-	return s.render(w, r, s.tmpl.home, nil)
+	return s.render(w, r, s.templates.home, nil)
 }
 
-func (s *server) render(w http.ResponseWriter, r *http.Request, tmpl *template.Template, data interface{}) *Error {
+func (s *server) render(w http.ResponseWriter, r *http.Request, tmpl *tmpl, data interface{}) *Error {
 	m := map[string]interface{}{
 		csrf.TemplateTag: csrf.TemplateField(r),
+		"nav":            tmpl.nav,
 	}
 
 	if data != nil {
@@ -267,16 +273,7 @@ func (s *server) serveAddPet(w http.ResponseWriter, r *http.Request) *Error {
 		return E(nil, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 	}
 
-	err := s.tmpl.addPet.Execute(w,
-		map[string]interface{}{
-			"user":           user,
-			csrf.TemplateTag: csrf.TemplateField(r),
-		},
-	)
-	if err != nil {
-		return E(err, "could not serve addPet", http.StatusInternalServerError)
-	}
-	return nil
+	return s.render(w, r, s.templates.addPet, nil)
 }
 
 func (s *server) handleAddPet(w http.ResponseWriter, r *http.Request) *Error {
@@ -309,7 +306,7 @@ func (s *server) searchReplyHandler(w http.ResponseWriter, r *http.Request) *Err
 		}
 	}
 
-	if err := s.tmpl.searchReply.Execute(w, p); err != nil {
+	if err := s.templates.searchReply.Execute(w, p); err != nil {
 		return E(err, "internal server error", http.StatusInternalServerError)
 	}
 	return nil
@@ -320,7 +317,7 @@ func (s *server) servePets(w http.ResponseWriter, r *http.Request) *Error {
 	if err != nil {
 		return E(err, "Error getting all pets", http.StatusInternalServerError)
 	}
-	err = s.tmpl.showPets.Execute(w, pets)
+	err = s.templates.showPets.Execute(w, pets)
 	if err != nil {
 		return E(err, "internal server error", http.StatusInternalServerError)
 	}
