@@ -1,19 +1,24 @@
 package web
 
 import (
+	"encoding/base32"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
 
 	gorillactx "github.com/gorilla/context"
 	"github.com/gorilla/csrf"
+	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"github.com/psimika/secure-web-app/petfind"
 )
@@ -112,6 +117,7 @@ func NewServer(
 	s.mux.Handle("/login/github", handler(s.handleLoginGitHub))
 	s.mux.Handle("/login/github/cb", handler(s.handleLoginGitHubCallback))
 	s.mux.Handle("/logout", s.auth(s.handleLogout))
+	s.mux.Handle("/photos/", handler(s.servePhoto))
 
 	fs := http.FileServer(http.Dir(filepath.Join(templatePath, "assets")))
 	s.mux.Handle("/assets/", http.StripPrefix("/assets", cacheAssets(fs)))
@@ -289,21 +295,71 @@ func (s *server) handleAddPet(w http.ResponseWriter, r *http.Request) *Error {
 		return E(nil, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 	}
 
-	p, form, err := postFormPet(r)
+	pet, form, err := postFormPet(r)
 	if err != nil {
-		form.NameErr = err.Name.String()
-		form.AgeErr = err.Age.String()
-		form.SizeErr = err.Size.String()
-		form.TypeErr = err.Type.String()
-		form.GenderErr = err.Gender.String()
 		return s.render(w, r, s.templates.addPet, form)
-
 	}
-	if err := s.store.AddPet(p); err != nil {
+
+	photo, err := s.handlePetPhoto(w, r)
+	if err != nil {
+		return E(err, "Error uploading photo", http.StatusInternalServerError)
+	}
+
+	pet.PhotoID = photo.ID
+	pet.OwnerID = user.ID
+	if err := s.store.AddPet(pet); err != nil {
 		return E(err, "Error adding pet", http.StatusInternalServerError)
 	}
 
-	w.Write([]byte("pet added!"))
+	http.Redirect(w, r, "/pets", http.StatusFound)
+	return nil
+}
+
+func (s *server) handlePetPhoto(w http.ResponseWriter, r *http.Request) (*petfind.Photo, error) {
+	file, handler, err := r.FormFile("photo")
+	if err != nil {
+		return nil, fmt.Errorf("error getting photo form file: %v", err)
+	}
+	defer file.Close()
+	key := securecookie.GenerateRandomKey(32)
+	if key == nil {
+		return nil, fmt.Errorf("error generating random key for photo")
+	}
+	photoKey := strings.TrimRight(base32.StdEncoding.EncodeToString(key), "=")
+
+	if err := mkDirIfNotExist("photos", 0700); err != nil {
+		return nil, fmt.Errorf("error creating upload dir: %v", err)
+	}
+
+	f, err := os.Create(filepath.Join("photos", photoKey))
+	if err != nil {
+		return nil, fmt.Errorf("error creating file for upload: %v", err)
+	}
+	defer f.Close()
+	if _, err := io.Copy(f, file); err != nil {
+		return nil, fmt.Errorf("error copying upload file: %v", err)
+	}
+
+	photo := &petfind.Photo{
+		Key:              photoKey,
+		OriginalFilename: handler.Filename,
+		ContentType:      handler.Header.Get("Content-Type"),
+	}
+	if err := s.store.AddPhoto(photo); err != nil {
+		return nil, fmt.Errorf("error adding photo to database: %v", err)
+	}
+	return photo, nil
+}
+
+func mkDirIfNotExist(name string, perm os.FileMode) error {
+	if _, err := os.Stat(name); err != nil {
+		if os.IsNotExist(err) {
+			if err = os.Mkdir(name, perm); err != nil {
+				return fmt.Errorf("could not make dir: %v", err)
+			}
+			log.Printf("Created directory %s %v", name, perm)
+		}
+	}
 	return nil
 }
 
@@ -318,60 +374,59 @@ type addPetForm struct {
 	TypeErr   string
 	Gender    string
 	GenderErr string
-}
 
-type invalidFormError struct {
-	Name   invalidReason
-	Age    invalidReason
-	Size   invalidReason
-	Type   invalidReason
-	Gender invalidReason
+	Photo string
 }
 
 type invalidReason string
 
 func (ir invalidReason) String() string { return string(ir) }
 
-func postFormPet(r *http.Request) (*petfind.Pet, addPetForm, *invalidFormError) {
-	err := &invalidFormError{}
+func postFormPet(r *http.Request) (*petfind.Pet, addPetForm, error) {
+	formErr := false
 	form := addPetForm{}
 
 	name := r.PostFormValue("name")
 	form.Name = name
 	if valid, reason := validName(name); !valid {
-		err.Name = reason
+		formErr = true
+		form.NameErr = reason.String()
 	}
 
 	ageStr := r.PostFormValue("age")
 	form.Age = ageStr
 	age, valid, reason := validAge(ageStr)
 	if !valid {
-		err.Age = reason
+		formErr = true
+		form.AgeErr = reason.String()
 	}
 
 	sizeStr := r.PostFormValue("size")
 	form.Size = sizeStr
 	size, valid, reason := validSize(sizeStr)
 	if !valid {
-		err.Size = reason
+		formErr = true
+		form.SizeErr = reason.String()
 	}
 
 	typeStr := r.PostFormValue("type")
 	form.Type = typeStr
 	t, valid, reason := validType(typeStr)
 	if !valid {
-		err.Type = reason
+		formErr = true
+		form.TypeErr = reason.String()
 	}
 
 	genderStr := r.PostFormValue("gender")
 	form.Gender = genderStr
 	gender, valid, reason := validGender(genderStr)
 	if !valid {
-		err.Gender = reason
+		formErr = true
+		form.GenderErr = reason.String()
 	}
 
-	if err != (&invalidFormError{}) {
-		return nil, form, err
+	if formErr {
+		return nil, form, fmt.Errorf("form error")
 	}
 	p := &petfind.Pet{Name: name, Age: age, Size: size, Type: t, Gender: gender}
 	return p, form, nil
@@ -524,6 +579,34 @@ func (s *server) servePets(w http.ResponseWriter, r *http.Request) *Error {
 	err = s.templates.showPets.Execute(w, pets)
 	if err != nil {
 		return E(err, "internal server error", http.StatusInternalServerError)
+	}
+	return nil
+}
+
+func (s *server) servePhoto(w http.ResponseWriter, r *http.Request) *Error {
+	idStr := r.URL.Path[strings.LastIndex(r.URL.Path, "/")+1:]
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		return E(err, "invalid photo id", http.StatusBadRequest)
+	}
+
+	photo, err := s.store.GetPhoto(id)
+	if err == petfind.ErrNotFound {
+		return E(nil, "Photo does not exist", http.StatusNotFound)
+	}
+	if err != nil {
+		return E(err, "Error getting photo from database", http.StatusInternalServerError)
+	}
+
+	f, err := os.Open(filepath.Join("photos", photo.Key))
+	if err != nil {
+		return E(err, "Error opening photo file", http.StatusInternalServerError)
+	}
+	defer f.Close()
+
+	w.Header().Set("Content-Type", photo.ContentType)
+	if _, err := io.Copy(w, f); err != nil {
+		return E(err, "Error serving image", http.StatusInternalServerError)
 	}
 	return nil
 }

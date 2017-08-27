@@ -91,6 +91,9 @@ type Pet struct {
 	Created time.Time
 	Updated time.Time
 	Notes   string
+	PhotoID int64
+	OwnerID int64
+	Owner   *User
 }
 
 // ErrNotFound is returned whenever an item does not exist in the Store.
@@ -106,6 +109,9 @@ type Store interface {
 	GetUser(userID int64) (*User, error)
 	PutGithubUser(*GithubUser) (*User, error)
 	GetUserByGithubID(githubID int64) (*User, error)
+
+	AddPhoto(*Photo) error
+	GetPhoto(photoID int64) (*Photo, error)
 
 	MakeSchema() error
 	DropSchema() error
@@ -129,6 +135,14 @@ type GithubUser struct {
 	Login string `json:"login"`
 	Name  string `json:"name"`
 	Email string `json:"email"`
+}
+
+type Photo struct {
+	ID               int64
+	Key              string
+	OriginalFilename string
+	ContentType      string
+	Created          time.Time
 }
 
 // TODO(psimika): Useful article in case a custom type needs to be stored in

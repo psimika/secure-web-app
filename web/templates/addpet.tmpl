@@ -4,7 +4,7 @@
       <div class="col">
         <div class="card">
         <div class="card-body">
-          <form action="/pets/add/submit" method="POST" accept-charset="UTF-8">
+          <form action="/pets/add/submit" method="POST" accept-charset="UTF-8" enctype="multipart/form-data">
             {{ .csrfField }}
             <div class="form-group">
               <label for="name">Name</label>

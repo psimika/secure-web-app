@@ -33,8 +33,12 @@ func (db *store) MakeSchema() error {
 		age integer,
 		type integer,
 		size integer,
+		gender integer,
+		notes text,
 		created timestamptz,
-		updated timestamptz
+		updated timestamptz,
+		owner_id bigint references users,
+		photo_id bigint references photos
 	)`
 	if _, err := db.Exec(pets); err != nil {
 		return fmt.Errorf("error creating table pets: %v", err)
@@ -51,10 +55,23 @@ func (db *store) MakeSchema() error {
 	if _, err := db.Exec(users); err != nil {
 		return fmt.Errorf("error creating table users: %v", err)
 	}
+	const photos = `CREATE TABLE IF NOT EXISTS photos (
+		id bigserial PRIMARY KEY,
+		key varchar(70),
+		original_filename varchar(70),
+		content_type varchar(70),
+		created timestamptz
+	)`
+	if _, err := db.Exec(photos); err != nil {
+		return fmt.Errorf("error creating table photos: %v", err)
+	}
 	return nil
 }
 
 func (db *store) DropSchema() error {
+	if _, err := db.Exec("DROP TABLE photos"); err != nil {
+		return fmt.Errorf("error dropping table photos: %v", err)
+	}
 	if _, err := db.Exec("DROP TABLE users"); err != nil {
 		return fmt.Errorf("error dropping table users: %v", err)
 	}

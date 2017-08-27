@@ -3,14 +3,17 @@
     <div class="row">
       {{range .}}
         <div class="col">
-          <div class="card">
+          <div class="card" style="width: 20rem;">
             <div class="card-header">{{.ID}}</div>
+            <img class="card-img-top" src="/photos/{{.PhotoID}}" alt="Photo of pet named {{.Name}}.">
             <div class="card-body">
               <h4 class="card-title">{{.Name}}</h4>
-              <h6 class="card-subtitle mb-2 text-muted"></h6>
-              {{if ne .Age 0 }}<span class="badge badge-info">{{.Age}}</span>{{end}}
-              {{if ne .Gender 0 }}<span class="badge badge-info">{{.Gender}}</span>{{end}}
-              {{if ne .Size 0 }}<span class="badge badge-info">{{.Size}}</span>{{end}}
+              <h6 class="card-subtitle mb-2 text-muted">{{.Owner.Name}}</h6>
+              <div class="mb-2">
+                {{if ne .Age 0 }}<span class="badge badge-info">{{.Age}}</span>{{end}}
+                {{if ne .Gender 0 }}<span class="badge badge-info">{{.Gender}}</span>{{end}}
+                {{if ne .Size 0 }}<span class="badge badge-info">{{.Size}}</span>{{end}}
+              </div>
               <p class="card-text">{{.Notes}}</p>
             </div>
             <div class="card-footer text-muted">
