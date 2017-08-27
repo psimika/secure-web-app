@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"regexp"
 	"strconv"
 
 	"golang.org/x/oauth2"
@@ -274,22 +275,30 @@ func (s *server) serveAddPet(w http.ResponseWriter, r *http.Request) *Error {
 		return E(nil, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 	}
 
-	return s.render(w, r, s.templates.addPet, nil)
+	return s.render(w, r, s.templates.addPet, addPetForm{})
 }
 
 func (s *server) handleAddPet(w http.ResponseWriter, r *http.Request) *Error {
+	if r.Method != "POST" {
+		fmt.Println("post")
+		return E(nil, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+	}
+
 	user, ok := fromContextGetUser(r.Context())
 	if !ok || user == nil {
 		return E(nil, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 	}
 
-	name := r.FormValue("name")
-
-	age, err := formValueAge(r)
+	p, form, err := postFormPet(r)
 	if err != nil {
-		return E(err, "bad age value", http.StatusBadRequest)
+		form.NameErr = err.Name.String()
+		form.AgeErr = err.Age.String()
+		form.SizeErr = err.Size.String()
+		form.TypeErr = err.Type.String()
+		form.GenderErr = err.Gender.String()
+		return s.render(w, r, s.templates.addPet, form)
+
 	}
-	p := &petfind.Pet{Name: name, Age: age}
 	if err := s.store.AddPet(p); err != nil {
 		return E(err, "Error adding pet", http.StatusInternalServerError)
 	}
@@ -298,25 +307,193 @@ func (s *server) handleAddPet(w http.ResponseWriter, r *http.Request) *Error {
 	return nil
 }
 
-func formValueInt64(r *http.Request, key string) (int64, error) {
-	v := r.FormValue(key)
-	i, err := strconv.ParseInt(v, 10, 64)
-	if err != nil {
-		return 0, fmt.Errorf("error parsing form value %q:%v", key, err)
-	}
-	return i, nil
+type addPetForm struct {
+	Name      string
+	NameErr   string
+	Age       string
+	AgeErr    string
+	Size      string
+	SizeErr   string
+	Type      string
+	TypeErr   string
+	Gender    string
+	GenderErr string
 }
 
-func formValueAge(r *http.Request) (petfind.PetAge, error) {
-	age, err := formValueInt64(r, "age")
+type invalidFormError struct {
+	Name   invalidReason
+	Age    invalidReason
+	Size   invalidReason
+	Type   invalidReason
+	Gender invalidReason
+}
+
+type invalidReason string
+
+func (ir invalidReason) String() string { return string(ir) }
+
+func postFormPet(r *http.Request) (*petfind.Pet, addPetForm, *invalidFormError) {
+	err := &invalidFormError{}
+	form := addPetForm{}
+
+	name := r.PostFormValue("name")
+	form.Name = name
+	if valid, reason := validName(name); !valid {
+		err.Name = reason
+	}
+
+	ageStr := r.PostFormValue("age")
+	form.Age = ageStr
+	age, valid, reason := validAge(ageStr)
+	if !valid {
+		err.Age = reason
+	}
+
+	sizeStr := r.PostFormValue("size")
+	form.Size = sizeStr
+	size, valid, reason := validSize(sizeStr)
+	if !valid {
+		err.Size = reason
+	}
+
+	typeStr := r.PostFormValue("type")
+	form.Type = typeStr
+	t, valid, reason := validType(typeStr)
+	if !valid {
+		err.Type = reason
+	}
+
+	genderStr := r.PostFormValue("gender")
+	form.Gender = genderStr
+	gender, valid, reason := validGender(genderStr)
+	if !valid {
+		err.Gender = reason
+	}
+
+	if err != (&invalidFormError{}) {
+		return nil, form, err
+	}
+	p := &petfind.Pet{Name: name, Age: age, Size: size, Type: t, Gender: gender}
+	return p, form, nil
+}
+
+var nameRegex = regexp.MustCompile(`^[a-zA-Z]+$`)
+
+func validName(name string) (bool, invalidReason) {
+	if name == "" {
+		return false, "Pet's name cannot be empty."
+	}
+	if len(name) > 20 {
+		return false, "Pet's name cannot be longer than 20 characters."
+	}
+	if m := nameRegex.MatchString(name); !m {
+		return false, "Pet's name can only contain letters."
+	}
+	return true, ""
+}
+
+func validAge(ageStr string) (petfind.PetAge, bool, invalidReason) {
+	if ageStr == "" {
+		return petfind.UnknownAge, false, "Age is required."
+	}
+	age, err := strconv.ParseInt(ageStr, 10, 64)
 	if err != nil {
-		return petfind.UnknownAge, err
+		return petfind.UnknownAge, false, "Bad value for age."
 	}
-	// Validate age.
-	if age < 0 || age > 4 {
-		return petfind.UnknownAge, fmt.Errorf("invalid value for age")
+
+	petAge := petfind.PetAge(age)
+	if !validPetAge(petAge) {
+		return petfind.UnknownAge, false, "Invalid value for age."
 	}
-	return petfind.PetAge(age), nil
+	return petAge, true, ""
+}
+
+func validPetAge(v petfind.PetAge) bool {
+	validValues := []petfind.PetAge{petfind.UnknownAge, petfind.Baby, petfind.Young, petfind.Adult, petfind.Senior}
+	for _, valid := range validValues {
+		if v == valid {
+			return true
+		}
+	}
+	return false
+}
+
+func validSize(ageStr string) (petfind.PetSize, bool, invalidReason) {
+	if ageStr == "" {
+		return petfind.UnknownSize, false, "Pet's size is required."
+	}
+	size, err := strconv.ParseInt(ageStr, 10, 64)
+	if err != nil {
+		return petfind.UnknownSize, false, "Bad value for size."
+	}
+
+	petSize := petfind.PetSize(size)
+	if !validPetSize(petSize) {
+		return petfind.UnknownSize, false, "Invalid value for size."
+	}
+	return petSize, true, ""
+}
+
+func validPetSize(v petfind.PetSize) bool {
+	validValues := []petfind.PetSize{petfind.UnknownSize, petfind.Small, petfind.Medium, petfind.Large, petfind.Huge}
+	for _, valid := range validValues {
+		if v == valid {
+			return true
+		}
+	}
+	return false
+}
+
+func validType(typeStr string) (petfind.PetType, bool, invalidReason) {
+	if typeStr == "" {
+		return petfind.UnknownType, false, "Pet's type is required."
+	}
+	t, err := strconv.ParseInt(typeStr, 10, 64)
+	if err != nil {
+		return petfind.UnknownType, false, "Bad value for pet's type."
+	}
+
+	petType := petfind.PetType(t)
+	if !validPetType(petType) {
+		return petfind.UnknownType, false, "Invalid value for pet's type."
+	}
+	return petType, true, ""
+}
+
+func validPetType(v petfind.PetType) bool {
+	validValues := []petfind.PetType{petfind.UnknownType, petfind.Cat, petfind.Dog}
+	for _, valid := range validValues {
+		if v == valid {
+			return true
+		}
+	}
+	return false
+}
+
+func validGender(typeStr string) (petfind.PetGender, bool, invalidReason) {
+	if typeStr == "" {
+		return petfind.UnknownGender, false, "Pet's gender is required."
+	}
+	t, err := strconv.ParseInt(typeStr, 10, 64)
+	if err != nil {
+		return petfind.UnknownGender, false, "Bad value for pet's gender."
+	}
+
+	petGender := petfind.PetGender(t)
+	if !validPetGender(petGender) {
+		return petfind.UnknownGender, false, "Invalid value for pet's gender."
+	}
+	return petGender, true, ""
+}
+
+func validPetGender(v petfind.PetGender) bool {
+	validValues := []petfind.PetGender{petfind.UnknownGender, petfind.Male, petfind.Female}
+	for _, valid := range validValues {
+		if v == valid {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *server) searchReplyHandler(w http.ResponseWriter, r *http.Request) *Error {

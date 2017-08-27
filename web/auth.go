@@ -89,8 +89,7 @@ func (s *server) auth(fn handler) handler {
 
 		// Put user in the context so that the next handler can access it.
 		ctx := newContextWithUser(r.Context(), user)
-		fn(w, r.WithContext(ctx))
-		return nil
+		return fn(w, r.WithContext(ctx))
 	}
 }
 
