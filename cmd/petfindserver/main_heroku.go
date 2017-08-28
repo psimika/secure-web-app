@@ -95,10 +95,10 @@ func main() {
 
 	var photos petfind.PhotoStore
 	if cloudinaryKey != "" && cloudinarySecret != "" && cloudinaryName != "" {
-		photos = cloudinary.NewPhotoStore(*cloudinaryKey, *cloudinarySecret, *cloudinaryName)
+		photos = cloudinary.NewPhotoStore(cloudinaryKey, cloudinarySecret, cloudinaryName)
 	} else {
 		log.Println("Warning: Using local photo store. Photos will be deleted on app restart!")
-		photos = petfind.NewPhotoStore(*photosPath)
+		photos = petfind.NewPhotoStore(photosPath)
 	}
 
 	handlers, err := web.NewServer(
@@ -108,7 +108,7 @@ func main() {
 		sessionMaxTTL,
 		CSRF,
 		tmplPath,
-		photoStore,
+		photos,
 		githubID,
 		githubSecret)
 	if err != nil {
