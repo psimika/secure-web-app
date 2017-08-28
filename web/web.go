@@ -350,8 +350,11 @@ type addPetForm struct {
 	TypeErr   string
 	Gender    string
 	GenderErr string
+	Notes     string
+	NotesErr  string
 
-	Photo string
+	Photo    string
+	PhotoErr string
 }
 
 type invalidReason string
@@ -401,10 +404,17 @@ func postFormPet(r *http.Request) (*petfind.Pet, addPetForm, error) {
 		form.GenderErr = reason.String()
 	}
 
+	notes := r.PostFormValue("notes")
+	form.Notes = notes
+	if valid, reason := validNotes(notes); !valid {
+		formErr = true
+		form.NotesErr = reason.String()
+	}
+
 	if formErr {
 		return nil, form, fmt.Errorf("form error")
 	}
-	p := &petfind.Pet{Name: name, Age: age, Size: size, Type: t, Gender: gender}
+	p := &petfind.Pet{Name: name, Age: age, Size: size, Type: t, Gender: gender, Notes: notes}
 	return p, form, nil
 }
 
@@ -419,6 +429,16 @@ func validName(name string) (bool, invalidReason) {
 	}
 	if m := nameRegex.MatchString(name); !m {
 		return false, "Pet's name can only contain letters."
+	}
+	return true, ""
+}
+
+func validNotes(notes string) (bool, invalidReason) {
+	if notes == "" {
+		return false, "Pet's notes cannot be empty."
+	}
+	if len(notes) > 1000 {
+		return false, "Pet's notes cannot be longer than 1000 characters."
 	}
 	return true, ""
 }
