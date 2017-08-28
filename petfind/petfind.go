@@ -137,14 +137,6 @@ type GithubUser struct {
 	Email string `json:"email"`
 }
 
-type Photo struct {
-	ID               int64
-	Key              string
-	OriginalFilename string
-	ContentType      string
-	Created          time.Time
-}
-
 // TODO(psimika): Useful article in case a custom type needs to be stored in
 // the database:
 //

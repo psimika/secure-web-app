@@ -15,6 +15,8 @@ import (
 	"github.com/gorilla/sessions"
 	_ "github.com/lib/pq"
 
+	"github.com/psimika/secure-web-app/petfind"
+	"github.com/psimika/secure-web-app/petfind/cloudinary"
 	"github.com/psimika/secure-web-app/petfind/postgres"
 	"github.com/psimika/secure-web-app/web"
 )
@@ -44,20 +46,23 @@ func main() {
 	// app knows on which database to connect and on which port to listen on.
 	// Heroku deploys the application under /app.
 	var (
-		databaseURL   = getenvString("", "DATABASE_URL")
-		port          = getenvString("8080", "PORT")
-		tmplPath      = getenvString("/app/web", "TMPL_PATH")
-		photosPath    = getenvString("/app/photos", "PHOTOS_PATH")
-		githubID      = getenvString("", "GITHUB_ID")
-		githubSecret  = getenvString("", "GITHUB_SECRET")
-		sessionTTL    = getenvInt(1200, "SESSION_TTL")
-		sessionMaxTTL = getenvInt(3600, "SESSION_MAX_TTL")
-		redisURL      = getenvString("", "REDIS_URL")
-		redisPass     = getenvString("", "REDIS_PASS")
-		redisMaxIdle  = getenvInt(10, "REDIS_MAX_IDLE")
-		hashKeyStr    = getenvString("", "HASH_KEY")
-		blockKeyStr   = getenvString("", "BLOCK_KEY")
-		csrfKeyStr    = getenvString("", "CSRF_KEY")
+		databaseURL      = getenvString("", "DATABASE_URL")
+		port             = getenvString("8080", "PORT")
+		tmplPath         = getenvString("/app/web", "TMPL_PATH")
+		photosPath       = getenvString("/app/photos", "PHOTOS_PATH")
+		githubID         = getenvString("", "GITHUB_ID")
+		githubSecret     = getenvString("", "GITHUB_SECRET")
+		sessionTTL       = getenvInt(1200, "SESSION_TTL")
+		sessionMaxTTL    = getenvInt(3600, "SESSION_MAX_TTL")
+		redisURL         = getenvString("", "REDIS_URL")
+		redisPass        = getenvString("", "REDIS_PASS")
+		redisMaxIdle     = getenvInt(10, "REDIS_MAX_IDLE")
+		hashKeyStr       = getenvString("", "HASH_KEY")
+		blockKeyStr      = getenvString("", "BLOCK_KEY")
+		csrfKeyStr       = getenvString("", "CSRF_KEY")
+		cloudinaryKey    = getenvString("", "CLOUDINARY_KEY")
+		cloudinarySecret = getenvString("", "CLOUDINARY_SECRET")
+		cloudinaryName   = getenvString("petfind-photos", "CLOUDINARY_NAME")
 	)
 	hashKey := validHashKey(hashKeyStr)
 	blockKey := validBlockKey(blockKeyStr)
@@ -88,6 +93,14 @@ func main() {
 
 	CSRF := csrf.Protect(csrfKey)
 
+	var photos petfind.PhotoStore
+	if cloudinaryKey != "" && cloudinarySecret != "" && cloudinaryName != "" {
+		photos = cloudinary.NewPhotoStore(*cloudinaryKey, *cloudinarySecret, *cloudinaryName)
+	} else {
+		log.Println("Warning: Using local photo store. Photos will be deleted on app restart!")
+		photos = petfind.NewPhotoStore(*photosPath)
+	}
+
 	handlers, err := web.NewServer(
 		store,
 		sessionStore,
@@ -95,7 +108,7 @@ func main() {
 		sessionMaxTTL,
 		CSRF,
 		tmplPath,
-		photosPath,
+		photoStore,
 		githubID,
 		githubSecret)
 	if err != nil {

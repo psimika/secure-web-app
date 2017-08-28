@@ -1,13 +1,10 @@
 package web
 
 import (
-	"encoding/base32"
 	"fmt"
 	"html/template"
-	"io"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -18,7 +15,6 @@ import (
 
 	gorillactx "github.com/gorilla/context"
 	"github.com/gorilla/csrf"
-	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"github.com/psimika/secure-web-app/petfind"
 )
@@ -67,7 +63,7 @@ type server struct {
 	sessionTTL    int
 	sessionMaxTTL int
 	favicons      map[string]string
-	photosPath    string
+	photos        petfind.PhotoStore
 }
 
 // templates contains the server's templates required to render its pages.
@@ -98,7 +94,7 @@ func NewServer(
 	sessionMaxTTL int,
 	CSRF func(http.Handler) http.Handler,
 	templatePath string,
-	photosPath string,
+	photoStore petfind.PhotoStore,
 	githubID string,
 	githubSecret string,
 ) (http.Handler, error) {
@@ -115,7 +111,7 @@ func NewServer(
 		sessions:      sessionStore,
 		sessionTTL:    sessionTTL,
 		sessionMaxTTL: sessionMaxTTL,
-		photosPath:    photosPath,
+		photos:        photoStore,
 	}
 	s.handlers = gorillactx.ClearHandler(CSRF(s.mux))
 	s.mux.Handle("/", s.guest(s.serveHome))
@@ -331,47 +327,16 @@ func (s *server) handlePetPhoto(w http.ResponseWriter, r *http.Request) (*petfin
 		return nil, fmt.Errorf("error getting photo form file: %v", err)
 	}
 	defer file.Close()
-	key := securecookie.GenerateRandomKey(32)
-	if key == nil {
-		return nil, fmt.Errorf("error generating random key for photo")
-	}
-	photoKey := strings.TrimRight(base32.StdEncoding.EncodeToString(key), "=")
 
-	if err := mkDirAllIfNotExist(s.photosPath, 0700); err != nil {
-		return nil, fmt.Errorf("error creating upload dir: %v", err)
-	}
-
-	f, err := os.Create(filepath.Join(s.photosPath, photoKey))
+	photo, err := s.photos.Upload(file, handler.Header.Get("Content-Type"))
 	if err != nil {
-		return nil, fmt.Errorf("error creating file for upload: %v", err)
-	}
-	defer f.Close()
-
-	if _, err := io.Copy(f, file); err != nil {
-		return nil, fmt.Errorf("error copying upload file: %v", err)
+		return nil, fmt.Errorf("error uploading photo: %v", err)
 	}
 
-	photo := &petfind.Photo{
-		Key:              photoKey,
-		OriginalFilename: handler.Filename,
-		ContentType:      handler.Header.Get("Content-Type"),
-	}
 	if err := s.store.AddPhoto(photo); err != nil {
 		return nil, fmt.Errorf("error adding photo to database: %v", err)
 	}
 	return photo, nil
-}
-
-func mkDirAllIfNotExist(name string, perm os.FileMode) error {
-	if _, err := os.Stat(name); err != nil {
-		if os.IsNotExist(err) {
-			if err = os.MkdirAll(name, perm); err != nil {
-				return fmt.Errorf("could not make dir %q: %v", name, err)
-			}
-			log.Printf("Created directory %s %v", name, perm)
-		}
-	}
-	return nil
 }
 
 type addPetForm struct {
@@ -609,20 +574,9 @@ func (s *server) servePhoto(w http.ResponseWriter, r *http.Request) *Error {
 		return E(err, "Error getting photo from database", http.StatusInternalServerError)
 	}
 
-	f, err := os.Open(filepath.Join(s.photosPath, photo.Key))
-	if err != nil {
-		return E(err, "Error opening photo file", http.StatusInternalServerError)
-	}
-	defer f.Close()
-
-	if s, err := os.Stat(f.Name()); err == nil {
-		log.Println("photo location:", s.Name())
-		log.Println("photo location:", f.Name())
-	}
-
 	w.Header().Set("Content-Type", photo.ContentType)
-	if _, err := io.Copy(w, f); err != nil {
-		return E(err, "Error serving image", http.StatusInternalServerError)
+	if err := s.photos.ServePhoto(w, photo); err != nil {
+		return E(err, "error serving photo", http.StatusInternalServerError)
 	}
 	return nil
 }

@@ -17,32 +17,37 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/psimika/secure-web-app/https"
+	"github.com/psimika/secure-web-app/petfind"
+	"github.com/psimika/secure-web-app/petfind/cloudinary"
 	"github.com/psimika/secure-web-app/petfind/postgres"
 	"github.com/psimika/secure-web-app/web"
 )
 
 func main() {
 	var (
-		dataSource    = flag.String("datasource", "", "the database URL")
-		httpAddr      = flag.String("http", ":8080", "HTTP address for the server to listen on")
-		httpsAddr     = flag.String("https", ":8443", "HTTPS address for the server to listen on")
-		tmplPath      = flag.String("tmpl", defaultTmplPath(), "path containing the application's templates")
-		photosPath    = flag.String("photos", defaultPhotosPath(), "path to store photo uploads")
-		insecureHTTP  = flag.Bool("insecure", false, "whether to serve insecure HTTP instead of HTTPS")
-		certFile      = flag.String("tlscert", "", "TLS public key in PEM format used together with -tlskey")
-		keyFile       = flag.String("tlskey", "", "TLS private key in PEM format used together with -tlscert")
-		autocertHosts = flag.String("autocert", "", "one or more host names separated by space to get Let's Encrypt certificates automatically")
-		autocertCache = flag.String("autocertdir", "", "directory to cache the Let's Encrypt certificates")
-		githubID      = flag.String("githubid", "", "GitHub Client ID used for Login with GitHub")
-		githubSecret  = flag.String("githubsecret", "", "GitHub Client Secret used for Login with GitHub")
-		hashKeyStr    = flag.String("hashkey", "", "random key (32 or 64 bytes) used to sign/authenticate values using HMAC")
-		blockKeyStr   = flag.String("blockkey", "", "random key (32 bytes) used to encrypt values using AES-256")
-		csrfKeyStr    = flag.String("csrfkey", "", "random key (32 bytes) used to create CSRF tokens")
-		redisAddr     = flag.String("redis", ":6379", "Redis address to connect to and store sessions")
-		redisPass     = flag.String("redispass", "", "Redis password if needed")
-		redisMaxIdle  = flag.Int("redismaxidle", 10, "maximum number of idle Redis connections")
-		sessionTTL    = flag.Int("sessionttl", 1200, "`seconds` before a session expires due to inactivity (idle timeout)")
-		sessionMaxTTL = flag.Int("sessionmaxttl", 3600, "`seconds` before a session expires regardless of activity (absolute timeout)")
+		dataSource       = flag.String("datasource", "", "the database URL")
+		httpAddr         = flag.String("http", ":8080", "HTTP address for the server to listen on")
+		httpsAddr        = flag.String("https", ":8443", "HTTPS address for the server to listen on")
+		tmplPath         = flag.String("tmpl", defaultTmplPath(), "path containing the application's templates")
+		photosPath       = flag.String("photos", defaultPhotosPath(), "path to store photo uploads")
+		insecureHTTP     = flag.Bool("insecure", false, "whether to serve insecure HTTP instead of HTTPS")
+		certFile         = flag.String("tlscert", "", "TLS public key in PEM format used together with -tlskey")
+		keyFile          = flag.String("tlskey", "", "TLS private key in PEM format used together with -tlscert")
+		autocertHosts    = flag.String("autocert", "", "one or more host names separated by space to get Let's Encrypt certificates automatically")
+		autocertCache    = flag.String("autocertdir", "", "directory to cache the Let's Encrypt certificates")
+		githubID         = flag.String("githubid", "", "GitHub Client ID used for Login with GitHub")
+		githubSecret     = flag.String("githubsecret", "", "GitHub Client Secret used for Login with GitHub")
+		cloudinaryKey    = flag.String("cloudinarykey", "", "Cloudinary API Key used to upload photos")
+		cloudinarySecret = flag.String("cloudinarysecret", "", "Cloudinary API Secret used to upload photos")
+		cloudinaryName   = flag.String("cloudinaryname", "", "Cloudinary Cloud Name used to upload photos")
+		hashKeyStr       = flag.String("hashkey", "", "random key (32 or 64 bytes) used to sign/authenticate values using HMAC")
+		blockKeyStr      = flag.String("blockkey", "", "random key (32 bytes) used to encrypt values using AES-256")
+		csrfKeyStr       = flag.String("csrfkey", "", "random key (32 bytes) used to create CSRF tokens")
+		redisAddr        = flag.String("redis", ":6379", "Redis address to connect to and store sessions")
+		redisPass        = flag.String("redispass", "", "Redis password if needed")
+		redisMaxIdle     = flag.Int("redismaxidle", 10, "maximum number of idle Redis connections")
+		sessionTTL       = flag.Int("sessionttl", 1200, "`seconds` before a session expires due to inactivity (idle timeout)")
+		sessionMaxTTL    = flag.Int("sessionmaxttl", 3600, "`seconds` before a session expires regardless of activity (absolute timeout)")
 	)
 	flag.Parse()
 	if !*insecureHTTP && *autocertHosts == "" && (*certFile == "" || *keyFile == "") {
@@ -88,6 +93,13 @@ func main() {
 		CSRF = csrf.Protect(csrfKey, csrf.Secure(false))
 	}
 
+	var photos petfind.PhotoStore
+	if *cloudinaryKey != "" && *cloudinarySecret != "" && *cloudinaryName != "" {
+		photos = cloudinary.NewPhotoStore(*cloudinaryKey, *cloudinarySecret, *cloudinaryName)
+	} else {
+		photos = petfind.NewPhotoStore(*photosPath)
+	}
+
 	appHandlers, err := web.NewServer(
 		store,
 		sessionStore,
@@ -95,7 +107,7 @@ func main() {
 		*sessionMaxTTL,
 		CSRF,
 		*tmplPath,
-		*photosPath,
+		photos,
 		*githubID,
 		*githubSecret,
 	)

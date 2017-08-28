@@ -8,8 +8,8 @@ import (
 
 func (db *store) AddPhoto(p *petfind.Photo) error {
 	const photoInsertStmt = `
-	INSERT INTO photos(key, original_filename, content_type, created)
-	VALUES ($1, $2, $3, now())
+	INSERT INTO photos(key, url, original_filename, content_type, created)
+	VALUES ($1, $2, $3, $4, now())
 	RETURNING id, created
 	`
 	stmt, err := db.Prepare(photoInsertStmt)
@@ -22,7 +22,7 @@ func (db *store) AddPhoto(p *petfind.Photo) error {
 			return
 		}
 	}()
-	err = stmt.QueryRow(p.Key, p.OriginalFilename, p.ContentType).Scan(&p.ID, &p.Created)
+	err = stmt.QueryRow(p.Key, p.URL, p.OriginalFilename, p.ContentType).Scan(&p.ID, &p.Created)
 	if err != nil {
 		return err
 	}
@@ -34,6 +34,7 @@ func (db *store) GetPhoto(photoID int64) (*petfind.Photo, error) {
 	SELECT
 	  id,
 	  key,
+	  url,
 	  original_filename,
 	  content_type,
 	  created
@@ -44,6 +45,7 @@ func (db *store) GetPhoto(photoID int64) (*petfind.Photo, error) {
 	err := db.QueryRow(photoGetQuery, photoID).Scan(
 		&p.ID,
 		&p.Key,
+		&p.URL,
 		&p.OriginalFilename,
 		&p.ContentType,
 		&p.Created,
