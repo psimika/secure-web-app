@@ -63,7 +63,7 @@
             </div>
             <div class="form-group">
               <label for="notesTextArea">Notes</label>
-              <textarea class="form-control {{if .data.NotesErr}}is-invalid{{end}}" id="notesTextArea" rows="4" name="notes" placeholder="Enter a description or other details."></textarea>
+              <textarea class="form-control {{if .data.NotesErr}}is-invalid{{end}}" id="notesTextArea" rows="4" name="notes" placeholder="Enter a description or other details.">{{.data.Notes}}</textarea>
               <div class="invalid-feedback">
                 {{.data.NotesErr}}
               </div>
@@ -71,9 +71,11 @@
             <div class="form-group">
               <label for="photo">Pet's photo</label>
               <input type="file" class="form-control-file {{if .data.PhotoErr}}is-invalid{{end}}" id="photo" accept="image/*" name="photo">
-              <div class="invalid-feedback">
-                {{.data.PhotoErr}}
-              </div>
+              {{if .data.PhotoErr}}
+                <div class="invalid-feedback" style="display:block">
+                  {{.data.PhotoErr}}
+                </div>
+              {{end}}
             </div>
             <button type="submit" class="btn btn-primary">Submit</button>
           </form>

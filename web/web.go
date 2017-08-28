@@ -353,7 +353,6 @@ type addPetForm struct {
 	Notes     string
 	NotesErr  string
 
-	Photo    string
 	PhotoErr string
 }
 
@@ -411,11 +410,37 @@ func postFormPet(r *http.Request) (*petfind.Pet, addPetForm, error) {
 		form.NotesErr = reason.String()
 	}
 
+	file, handler, err := r.FormFile("photo")
+	if err == http.ErrMissingFile {
+		formErr = true
+		form.PhotoErr = "Please choose a photo for the pet."
+	}
+	if err != nil {
+		formErr = true
+		return nil, form, fmt.Errorf("error getting form file for photo validation: %v", err)
+	}
+	defer file.Close()
+	contentType := handler.Header.Get("Content-Type")
+	if !validContentType(contentType) {
+		formErr = true
+		form.PhotoErr = "Photo format must be jpeg, png or webp."
+	}
+
 	if formErr {
 		return nil, form, fmt.Errorf("form error")
 	}
 	p := &petfind.Pet{Name: name, Age: age, Size: size, Type: t, Gender: gender, Notes: notes}
 	return p, form, nil
+}
+
+func validContentType(v string) bool {
+	validValues := []string{"image/jpeg", "image/png", "image/webp"}
+	for _, valid := range validValues {
+		if v == valid {
+			return true
+		}
+	}
+	return false
 }
 
 var nameRegex = regexp.MustCompile(`^[a-zA-Z]+$`)
