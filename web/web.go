@@ -36,6 +36,13 @@ func E(err error, message string, code int) *Error {
 	return &Error{Err: err, Message: message, Code: code}
 }
 
+func (e Error) Error() string {
+	if e.Err != nil {
+		return fmt.Sprintf("%d %s: %v", e.Code, e.Message, e.Err)
+	}
+	return fmt.Sprintf("%d %s", e.Code, e.Message)
+}
+
 // handler is a custom HTTP handler that can return an *Error. It is used
 // instead of the standard http.Handler in order to simplify repetitive error
 // handling as proposed by Gerrand (2011a):
