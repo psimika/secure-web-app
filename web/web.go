@@ -60,6 +60,7 @@ type server struct {
 	sessionTTL    int
 	sessionMaxTTL int
 	favicons      map[string]string
+	photosPath    string
 }
 
 // templates contains the server's templates required to render its pages.
@@ -90,6 +91,7 @@ func NewServer(
 	sessionMaxTTL int,
 	CSRF func(http.Handler) http.Handler,
 	templatePath string,
+	photosPath string,
 	githubID string,
 	githubSecret string,
 ) (http.Handler, error) {
@@ -106,6 +108,7 @@ func NewServer(
 		sessions:      sessionStore,
 		sessionTTL:    sessionTTL,
 		sessionMaxTTL: sessionMaxTTL,
+		photosPath:    photosPath,
 	}
 	s.handlers = gorillactx.ClearHandler(CSRF(s.mux))
 	s.mux.Handle("/", s.guest(s.serveHome))
@@ -327,15 +330,16 @@ func (s *server) handlePetPhoto(w http.ResponseWriter, r *http.Request) (*petfin
 	}
 	photoKey := strings.TrimRight(base32.StdEncoding.EncodeToString(key), "=")
 
-	if err := mkDirIfNotExist("photos", 0700); err != nil {
+	if err := mkDirAllIfNotExist(s.photosPath, 0700); err != nil {
 		return nil, fmt.Errorf("error creating upload dir: %v", err)
 	}
 
-	f, err := os.Create(filepath.Join("photos", photoKey))
+	f, err := os.Create(filepath.Join(s.photosPath, photoKey))
 	if err != nil {
 		return nil, fmt.Errorf("error creating file for upload: %v", err)
 	}
 	defer f.Close()
+
 	if _, err := io.Copy(f, file); err != nil {
 		return nil, fmt.Errorf("error copying upload file: %v", err)
 	}
@@ -351,11 +355,11 @@ func (s *server) handlePetPhoto(w http.ResponseWriter, r *http.Request) (*petfin
 	return photo, nil
 }
 
-func mkDirIfNotExist(name string, perm os.FileMode) error {
+func mkDirAllIfNotExist(name string, perm os.FileMode) error {
 	if _, err := os.Stat(name); err != nil {
 		if os.IsNotExist(err) {
-			if err = os.Mkdir(name, perm); err != nil {
-				return fmt.Errorf("could not make dir: %v", err)
+			if err = os.MkdirAll(name, perm); err != nil {
+				return fmt.Errorf("could not make dir %q: %v", name, err)
 			}
 			log.Printf("Created directory %s %v", name, perm)
 		}
@@ -598,11 +602,16 @@ func (s *server) servePhoto(w http.ResponseWriter, r *http.Request) *Error {
 		return E(err, "Error getting photo from database", http.StatusInternalServerError)
 	}
 
-	f, err := os.Open(filepath.Join("photos", photo.Key))
+	f, err := os.Open(filepath.Join(s.photosPath, photo.Key))
 	if err != nil {
 		return E(err, "Error opening photo file", http.StatusInternalServerError)
 	}
 	defer f.Close()
+
+	if s, err := os.Stat(f.Name()); err == nil {
+		log.Println("photo location:", s.Name())
+		log.Println("photo location:", f.Name())
+	}
 
 	w.Header().Set("Content-Type", photo.ContentType)
 	if _, err := io.Copy(w, f); err != nil {

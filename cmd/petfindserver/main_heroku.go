@@ -47,6 +47,7 @@ func main() {
 		databaseURL   = getenvString("", "DATABASE_URL")
 		port          = getenvString("8080", "PORT")
 		tmplPath      = getenvString("/app/web", "TMPL_PATH")
+		photosPath    = getenvString("/app/photos", "PHOTOS_PATH")
 		githubID      = getenvString("", "GITHUB_ID")
 		githubSecret  = getenvString("", "GITHUB_SECRET")
 		sessionTTL    = getenvInt(1200, "SESSION_TTL")
@@ -94,6 +95,7 @@ func main() {
 		sessionMaxTTL,
 		CSRF,
 		tmplPath,
+		photosPath,
 		githubID,
 		githubSecret)
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 	"go/build"
 	"log"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -26,6 +27,7 @@ func main() {
 		httpAddr      = flag.String("http", ":8080", "HTTP address for the server to listen on")
 		httpsAddr     = flag.String("https", ":8443", "HTTPS address for the server to listen on")
 		tmplPath      = flag.String("tmpl", defaultTmplPath(), "path containing the application's templates")
+		photosPath    = flag.String("photos", defaultPhotosPath(), "path to store photo uploads")
 		insecureHTTP  = flag.Bool("insecure", false, "whether to serve insecure HTTP instead of HTTPS")
 		certFile      = flag.String("tlscert", "", "TLS public key in PEM format used together with -tlskey")
 		keyFile       = flag.String("tlskey", "", "TLS private key in PEM format used together with -tlscert")
@@ -93,6 +95,7 @@ func main() {
 		*sessionMaxTTL,
 		CSRF,
 		*tmplPath,
+		*photosPath,
 		*githubID,
 		*githubSecret,
 	)
@@ -140,6 +143,14 @@ func defaultTmplPath() string {
 		return ""
 	}
 	return p.Dir
+}
+
+func defaultPhotosPath() string {
+	p, err := build.Import("github.com/psimika/secure-web-app", "", build.FindOnly)
+	if err != nil {
+		return "photos"
+	}
+	return filepath.Join(p.Dir, "photos")
 }
 
 func redirectHTTP(w http.ResponseWriter, r *http.Request) {
