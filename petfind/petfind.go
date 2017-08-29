@@ -93,6 +93,7 @@ type Pet struct {
 	Notes   string
 	PhotoID int64
 	OwnerID int64
+	PlaceID int64
 	Owner   *User
 }
 
@@ -112,6 +113,14 @@ type Store interface {
 
 	AddPhoto(*Photo) error
 	GetPhoto(photoID int64) (*Photo, error)
+
+	AddPlaceGroups([]PlaceGroup) error
+	GetPlaceGroups() ([]PlaceGroup, error)
+	AddPlaceGroup(*PlaceGroup) error
+	AddPlace(*Place) error
+	GetPlace(int64) (*Place, error)
+	GetPlaceByKey(string) (*Place, error)
+	CountPlaces() (int64, error)
 
 	MakeSchema() error
 	DropSchema() error

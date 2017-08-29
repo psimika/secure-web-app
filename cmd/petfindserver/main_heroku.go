@@ -77,6 +77,18 @@ func main() {
 		log.Println("NewStore failed:", err)
 		return
 	}
+	// Add places and groups entries.
+	count, err := store.CountPlaces()
+	if err != nil {
+		log.Println("could not count places:", err)
+		return
+	}
+	if count == 0 {
+		if err := store.AddPlaceGroups(petfind.PlaceGroups); err != nil {
+			log.Println("failed to add places and groups entries:", err)
+			return
+		}
+	}
 
 	sessionStore, err := newRediStoreURL(redisMaxIdle, redisURL, redisPass, hashKey, blockKey)
 	if err != nil {

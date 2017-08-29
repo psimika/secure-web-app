@@ -64,6 +64,7 @@ type server struct {
 	sessionMaxTTL int
 	favicons      map[string]string
 	photos        petfind.PhotoStore
+	placeGroups   []petfind.PlaceGroup
 }
 
 // templates contains the server's templates required to render its pages.
@@ -102,6 +103,10 @@ func NewServer(
 	if err != nil {
 		return nil, fmt.Errorf("error parsing templates: %v", err)
 	}
+	groups, err := store.GetPlaceGroups()
+	if err != nil {
+		return nil, fmt.Errorf("error getting places and groups: %v", err)
+	}
 
 	s := &server{
 		mux:           http.NewServeMux(),
@@ -112,10 +117,11 @@ func NewServer(
 		sessionTTL:    sessionTTL,
 		sessionMaxTTL: sessionMaxTTL,
 		photos:        photoStore,
+		placeGroups:   groups,
 	}
 	s.handlers = gorillactx.ClearHandler(CSRF(s.mux))
 	s.mux.Handle("/", s.guest(s.serveHome))
-	s.mux.Handle("/form", handler(s.searchReplyHandler))
+	s.mux.Handle("/form", handler(s.handleSearch))
 	s.mux.Handle("/pets", handler(s.servePets))
 	s.mux.Handle("/pets/add", s.auth(s.serveAddPet))
 	s.mux.Handle("/pets/add/submit", s.auth(s.handleAddPet))
@@ -172,7 +178,7 @@ func newGitHubOAuthConfig(clientID, clientSecret string) *oauth2.Config {
 }
 
 func parseTemplates(dir string) (*templates, error) {
-	homeTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "navbar.tmpl"), filepath.Join(dir, "home.tmpl"))
+	homeTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "navbar.tmpl"), filepath.Join(dir, "searchform.tmpl"), filepath.Join(dir, "home.tmpl"))
 	if err != nil {
 		return nil, err
 	}
@@ -229,6 +235,7 @@ func (s *server) render(w http.ResponseWriter, r *http.Request, tmpl *tmpl, data
 	m := map[string]interface{}{
 		csrf.TemplateTag: csrf.TemplateField(r),
 		"nav":            tmpl.nav,
+		"groups":         s.placeGroups,
 	}
 
 	if data != nil {
@@ -301,8 +308,11 @@ func (s *server) handleAddPet(w http.ResponseWriter, r *http.Request) *Error {
 		return E(nil, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 	}
 
-	pet, form, err := postFormPet(r)
+	pet, form, err := s.postFormPet(r)
 	if err != nil {
+		return E(err, "error inspecting add pet form", http.StatusInternalServerError)
+	}
+	if form.Invalid {
 		return s.render(w, r, s.templates.addPet, form)
 	}
 
@@ -313,6 +323,7 @@ func (s *server) handleAddPet(w http.ResponseWriter, r *http.Request) *Error {
 
 	pet.PhotoID = photo.ID
 	pet.OwnerID = user.ID
+	pet.PlaceID = user.ID
 	if err := s.store.AddPet(pet); err != nil {
 		return E(err, "Error adding pet", http.StatusInternalServerError)
 	}
@@ -323,12 +334,16 @@ func (s *server) handleAddPet(w http.ResponseWriter, r *http.Request) *Error {
 
 func (s *server) handlePetPhoto(w http.ResponseWriter, r *http.Request) (*petfind.Photo, error) {
 	file, handler, err := r.FormFile("photo")
+	if err == http.ErrMissingFile {
+		return nil, err
+	}
 	if err != nil {
 		return nil, fmt.Errorf("error getting photo form file: %v", err)
 	}
 	defer file.Close()
 
-	photo, err := s.photos.Upload(file, handler.Header.Get("Content-Type"))
+	contentType := handler.Header.Get("Content-Type")
+	photo, err := s.photos.Upload(file, contentType)
 	if err != nil {
 		return nil, fmt.Errorf("error uploading photo: %v", err)
 	}
@@ -340,8 +355,11 @@ func (s *server) handlePetPhoto(w http.ResponseWriter, r *http.Request) (*petfin
 }
 
 type addPetForm struct {
+	Invalid   bool
 	Name      string
 	NameErr   string
+	Place     string
+	PlaceErr  string
 	Age       string
 	AgeErr    string
 	Size      string
@@ -360,22 +378,39 @@ type invalidReason string
 
 func (ir invalidReason) String() string { return string(ir) }
 
-func postFormPet(r *http.Request) (*petfind.Pet, addPetForm, error) {
-	formErr := false
+func (s *server) postFormPet(r *http.Request) (*petfind.Pet, addPetForm, error) {
 	form := addPetForm{}
 
 	name := r.PostFormValue("name")
 	form.Name = name
 	if valid, reason := validName(name); !valid {
-		formErr = true
+		form.Invalid = true
 		form.NameErr = reason.String()
+	}
+
+	placeKey := r.PostFormValue("place")
+	form.Place = placeKey
+	if placeKey == "" {
+		form.Invalid = true
+		form.PlaceErr = "Pet's location is required."
+	}
+	if placeKey != "" {
+		_, err := s.store.GetPlaceByKey(placeKey)
+		if err == petfind.ErrNotFound {
+			form.Invalid = true
+			form.PlaceErr = "Unrecognized location."
+		}
+		if err != nil && err != petfind.ErrNotFound {
+			form.Invalid = true
+			return nil, form, fmt.Errorf("error getting place from db: %v", err)
+		}
 	}
 
 	ageStr := r.PostFormValue("age")
 	form.Age = ageStr
 	age, valid, reason := validAge(ageStr)
 	if !valid {
-		formErr = true
+		form.Invalid = true
 		form.AgeErr = reason.String()
 	}
 
@@ -383,7 +418,7 @@ func postFormPet(r *http.Request) (*petfind.Pet, addPetForm, error) {
 	form.Size = sizeStr
 	size, valid, reason := validSize(sizeStr)
 	if !valid {
-		formErr = true
+		form.Invalid = true
 		form.SizeErr = reason.String()
 	}
 
@@ -391,7 +426,7 @@ func postFormPet(r *http.Request) (*petfind.Pet, addPetForm, error) {
 	form.Type = typeStr
 	t, valid, reason := validType(typeStr)
 	if !valid {
-		formErr = true
+		form.Invalid = true
 		form.TypeErr = reason.String()
 	}
 
@@ -399,36 +434,34 @@ func postFormPet(r *http.Request) (*petfind.Pet, addPetForm, error) {
 	form.Gender = genderStr
 	gender, valid, reason := validGender(genderStr)
 	if !valid {
-		formErr = true
+		form.Invalid = true
 		form.GenderErr = reason.String()
 	}
 
 	notes := r.PostFormValue("notes")
 	form.Notes = notes
 	if valid, reason := validNotes(notes); !valid {
-		formErr = true
+		form.Invalid = true
 		form.NotesErr = reason.String()
 	}
 
-	file, handler, err := r.FormFile("photo")
+	_, handler, err := r.FormFile("photo")
 	if err == http.ErrMissingFile {
-		formErr = true
+		form.Invalid = true
 		form.PhotoErr = "Please choose a photo for the pet."
 	}
-	if err != nil {
-		formErr = true
+	if err == nil {
+		contentType := handler.Header.Get("Content-Type")
+		if !validContentType(contentType) {
+			form.Invalid = true
+			form.PhotoErr = "Photo format must be jpeg, png or webp."
+		}
+	}
+	if err != nil && err != http.ErrMissingFile {
+		form.Invalid = true
 		return nil, form, fmt.Errorf("error getting form file for photo validation: %v", err)
 	}
-	defer file.Close()
-	contentType := handler.Header.Get("Content-Type")
-	if !validContentType(contentType) {
-		formErr = true
-		form.PhotoErr = "Photo format must be jpeg, png or webp."
-	}
 
-	if formErr {
-		return nil, form, fmt.Errorf("form error")
-	}
 	p := &petfind.Pet{Name: name, Age: age, Size: size, Type: t, Gender: gender, Notes: notes}
 	return p, form, nil
 }
@@ -572,7 +605,20 @@ func validPetGender(v petfind.PetGender) bool {
 	return false
 }
 
-func (s *server) searchReplyHandler(w http.ResponseWriter, r *http.Request) *Error {
+type search struct {
+	Location    string
+	LocationErr string
+	Type        string
+	TypeErr     string
+	Age         string
+	AgeErr      string
+	Size        string
+	SizeErr     string
+	Gender      string
+	GenderErr   string
+}
+
+func (s *server) handleSearch(w http.ResponseWriter, r *http.Request) *Error {
 	name := r.FormValue("name")
 
 	pets, err := s.store.GetAllPets()

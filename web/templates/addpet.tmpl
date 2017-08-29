@@ -13,6 +13,25 @@
                 {{.data.NameErr}}
               </div>
             </div>
+
+            <div class="form-group">
+              <label for="place">Location</label>
+              <select class="form-control {{if .data.PlaceErr}}is-invalid{{end}}" id="place" name="place">
+                <option value="" selected disabled hidden>Choose location</option>
+                {{$place:=.data.Place}}
+                {{range .groups}}
+                  <optgroup label="{{.Name}}">
+                    {{range .Places}}
+                      <option value="{{.Key}}" {{if eq .Key $place}}selected{{end}}>{{.Name}}</option>
+                    {{end}}
+                  </optgroup>
+                {{end}}
+              </select>
+              <div class="invalid-feedback">
+                {{.data.PlaceErr}}
+              </div>
+            </div>
+
             <div class="form-group">
               <label for="typeSelect">Type</label>
               <select class="form-control {{if .data.TypeErr}}is-invalid{{end}}" id="typeSelect" name="type">

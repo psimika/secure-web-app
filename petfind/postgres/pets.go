@@ -6,8 +6,8 @@ import (
 
 func (db *store) AddPet(p *petfind.Pet) error {
 	const petInsertStmt = `
-	INSERT INTO pets(name, age, size, type, gender, notes, owner_id, photo_id, created, updated)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), now())
+	INSERT INTO pets(name, age, size, type, gender, notes, owner_id, photo_id, place_id, created, updated)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now(), now())
 	RETURNING id, created, updated
 	`
 	stmt, err := db.Prepare(petInsertStmt)
@@ -20,7 +20,7 @@ func (db *store) AddPet(p *petfind.Pet) error {
 			return
 		}
 	}()
-	err = stmt.QueryRow(p.Name, p.Age, p.Size, p.Type, p.Gender, p.Notes, p.OwnerID, p.PhotoID).Scan(&p.ID, &p.Created, &p.Updated)
+	err = stmt.QueryRow(p.Name, p.Age, p.Size, p.Type, p.Gender, p.Notes, p.OwnerID, p.PhotoID, p.PlaceID).Scan(&p.ID, &p.Created, &p.Updated)
 	if err != nil {
 		return err
 	}
@@ -41,6 +41,7 @@ func (db *store) GetAllPets() ([]petfind.Pet, error) {
 	  p.updated,
 	  p.owner_id,
 	  p.photo_id,
+	  p.place_id,
 	  u.id,
 	  u.github_id,
 	  u.login,
@@ -77,6 +78,7 @@ func (db *store) GetAllPets() ([]petfind.Pet, error) {
 			&p.Updated,
 			&p.OwnerID,
 			&p.PhotoID,
+			&p.PlaceID,
 			&u.ID,
 			&u.GithubID,
 			&u.Login,
