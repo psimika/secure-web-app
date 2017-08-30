@@ -8,7 +8,7 @@
             <img class="card-img-top" src="/photos/{{.PhotoID}}" alt="Photo of pet named {{.Name}}.">
             <div class="card-body">
               <h4 class="card-title">{{.Name}}</h4>
-              <h6 class="card-subtitle mb-2 text-muted">{{.Owner.Name}}</h6>
+              <h6 class="card-subtitle mb-2 text-muted">{{.Place.Name}}</h6>
               <div class="mb-2">
                 {{if ne .Age 0 }}<span class="badge badge-info">{{.Age}}</span>{{end}}
                 {{if ne .Gender 0 }}<span class="badge badge-info">{{.Gender}}</span>{{end}}
@@ -17,7 +17,7 @@
               <p class="card-text">{{.Notes}}</p>
             </div>
             <div class="card-footer text-muted">
-              {{.Created}}
+              Owner: {{.Owner.Name}}
             </div>
           </div>
         </div>
