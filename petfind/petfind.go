@@ -130,10 +130,10 @@ type Store interface {
 
 type Search struct {
 	PlaceKey  string
-	Type      int64
-	Age       int64
-	Gender    int64
-	Size      int64
+	Type      PetType
+	Age       PetAge
+	Gender    PetGender
+	Size      PetSize
 	UseType   bool
 	UseAge    bool
 	UseGender bool

@@ -235,7 +235,7 @@ func (s *server) serveHome(w http.ResponseWriter, r *http.Request) *Error {
 		return nil
 	}
 
-	return s.render(w, r, s.templates.home, nil)
+	return s.render(w, r, s.templates.home, searchForm{})
 }
 
 func (s *server) render(w http.ResponseWriter, r *http.Request, tmpl *tmpl, data interface{}) *Error {
@@ -397,20 +397,9 @@ func (s *server) postFormPet(r *http.Request) (*petfind.Pet, addPetForm, error) 
 
 	placeKey := r.PostFormValue("place")
 	form.Place = placeKey
-	if placeKey == "" {
+	if valid, reason := s.validPlace(placeKey); !valid {
 		form.Invalid = true
-		form.PlaceErr = "Pet's location is required."
-	}
-	if placeKey != "" {
-		_, err := s.store.GetPlaceByKey(placeKey)
-		if err == petfind.ErrNotFound {
-			form.Invalid = true
-			form.PlaceErr = "Unrecognized location."
-		}
-		if err != nil && err != petfind.ErrNotFound {
-			form.Invalid = true
-			return nil, form, fmt.Errorf("error getting place from db: %v", err)
-		}
+		form.PlaceErr = reason.String()
 	}
 
 	ageStr := r.PostFormValue("age")
@@ -481,6 +470,24 @@ func validContentType(v string) bool {
 		}
 	}
 	return false
+}
+
+func (s *server) validPlace(placeKey string) (bool, invalidReason) {
+	if placeKey == "" {
+		return false, "Pet's location is required."
+	}
+	found := false
+	for _, g := range s.placeGroups {
+		for _, p := range g.Places {
+			if p.Key == placeKey {
+				found = true
+			}
+		}
+	}
+	if !found {
+		return false, "Unrecognized location."
+	}
+	return true, ""
 }
 
 var nameRegex = regexp.MustCompile(`^[a-zA-Z]+$`)
@@ -612,7 +619,8 @@ func validPetGender(v petfind.PetGender) bool {
 	return false
 }
 
-type search struct {
+type searchForm struct {
+	Invalid   bool
 	Place     string
 	PlaceErr  string
 	Type      string
@@ -626,11 +634,46 @@ type search struct {
 }
 
 func (s *server) handleSearch(w http.ResponseWriter, r *http.Request) *Error {
+	search := petfind.Search{}
+	form := searchForm{}
+
 	placeKey := r.FormValue("place")
-	if placeKey == "" {
-		return E(nil, "location is required", 400)
+	form.Place = placeKey
+	if valid, reason := s.validPlace(placeKey); !valid {
+		form.Invalid = true
+		form.PlaceErr = reason.String()
 	}
-	search := petfind.Search{PlaceKey: placeKey}
+	search.PlaceKey = placeKey
+
+	typeStr := r.FormValue("type")
+	form.Type = typeStr
+	if typeStr != "" {
+		t, valid, reason := validType(typeStr)
+		if !valid {
+			form.Invalid = true
+			form.TypeErr = reason.String()
+		} else {
+			search.Type = t
+			search.UseType = true
+		}
+	}
+
+	ageStr := r.FormValue("age")
+	form.Age = ageStr
+	if ageStr != "" {
+		age, valid, reason := validAge(ageStr)
+		if !valid {
+			form.Invalid = true
+			form.AgeErr = reason.String()
+		} else {
+			search.Age = age
+			search.UseAge = true
+		}
+	}
+
+	if form.Invalid {
+		return s.render(w, r, s.templates.home, form)
+	}
 
 	pets, err := s.store.SearchPets(search)
 	if err != nil {
