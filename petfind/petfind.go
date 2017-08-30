@@ -95,6 +95,7 @@ type Pet struct {
 	OwnerID int64
 	PlaceID int64
 	Owner   *User
+	Place   *Place
 }
 
 // ErrNotFound is returned whenever an item does not exist in the Store.

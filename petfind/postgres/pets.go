@@ -47,9 +47,14 @@ func (db *store) GetAllPets() ([]petfind.Pet, error) {
 	  u.login,
 	  u.name,
 	  u.email,
-	  u.created
+	  u.created,
+	  pl.id,
+	  pl.key,
+	  pl.name,
+	  pl.group_id
 	FROM pets p
 	  JOIN users u ON p.owner_id = u.id
+	  JOIN places pl ON p.place_id = pl.id
 	`
 	rows, err := db.Query(petGetAllQuery)
 	if err != nil {
@@ -66,6 +71,7 @@ func (db *store) GetAllPets() ([]petfind.Pet, error) {
 	for rows.Next() {
 		var p petfind.Pet
 		var u petfind.User
+		var pl petfind.Place
 		if err := rows.Scan(
 			&p.ID,
 			&p.Name,
@@ -85,10 +91,15 @@ func (db *store) GetAllPets() ([]petfind.Pet, error) {
 			&u.Name,
 			&u.Email,
 			&u.Created,
+			&pl.ID,
+			&pl.Key,
+			&pl.Name,
+			&pl.GroupID,
 		); err != nil {
 			return nil, err
 		}
 		p.Owner = &u
+		p.Place = &pl
 		pets = append(pets, p)
 	}
 	return pets, nil

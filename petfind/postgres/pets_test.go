@@ -69,6 +69,7 @@ func TestAddPet(t *testing.T) {
 			PhotoID: 1,
 			PlaceID: 1,
 			Owner:   owner,
+			Place:   place,
 		},
 	}
 	if got := pets; !reflect.DeepEqual(got, want) {
