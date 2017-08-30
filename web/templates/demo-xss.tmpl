@@ -1,0 +1,40 @@
+{{define "content"}}
+  <div class="content">
+    <div class="row">
+      <div class="col">
+        <div class="card" style="width: 24rem;">
+          <div class="card-body">
+            <h4 class="card-title">XSS Protection demo</h4>
+            <p class="card-text">
+            Go's
+            <a href="https://golang.org/pkg/html/template/#hdr-A_fuller_picture">html/template package</a>
+            will escape dangerous characters and safely print the input.
+            </p>
+            <form method="POST" action="/demo/xss">
+              <div class="form-group">
+                <input type="text" class="form-control" name="xss" value="<script>alert(document.cookie)</script>" size=35>
+                {{ .csrfField }}
+              </div>
+              <button class="btn btn-danger" type="submit">Submit XSS</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <div class="card my-4" style="width: 24rem;">
+          <div class="card-header">
+            Result
+          </div>
+          <div class="card-body">
+            <p class="card-text">The form's input will be printed here:</p>
+            <pre>{{.data}}</pre>
+            <footer class="blockquote-footer">View Page source to see the actual escaped characters.</footer>
+          </div>
+        </div>
+    </div>
+  </div>
+</div>
+
+{{end}}

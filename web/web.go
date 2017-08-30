@@ -75,6 +75,7 @@ type templates struct {
 	searchReply *tmpl
 	showPets    *tmpl
 	login       *tmpl
+	demoXSS     *tmpl
 }
 
 type tmpl struct {
@@ -130,6 +131,7 @@ func NewServer(
 	s.mux.Handle("/login/github/cb", handler(s.handleLoginGitHubCallback))
 	s.mux.Handle("/logout", s.auth(s.handleLogout))
 	s.mux.Handle("/photos/", handler(s.servePhoto))
+	s.mux.Handle("/demo/xss", handler(s.demoXSS))
 
 	fs := http.FileServer(http.Dir(filepath.Join(templatePath, "assets")))
 	s.mux.Handle("/assets/", http.StripPrefix("/assets", cacheAssets(fs)))
@@ -198,6 +200,10 @@ func parseTemplates(dir string) (*templates, error) {
 	if err != nil {
 		return nil, err
 	}
+	demoXSSTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "demo-xss.tmpl"))
+	if err != nil {
+		return nil, err
+	}
 	loginTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "navbar.tmpl"), filepath.Join(dir, "login.tmpl"))
 	t := &templates{
 		home:        &tmpl{homeTmpl, "home"},
@@ -206,6 +212,7 @@ func parseTemplates(dir string) (*templates, error) {
 		searchReply: &tmpl{searchReplyTmpl, ""},
 		showPets:    &tmpl{showPetsTmpl, ""},
 		login:       &tmpl{loginTmpl, ""},
+		demoXSS:     &tmpl{demoXSSTmpl, ""},
 	}
 	return t, err
 }
