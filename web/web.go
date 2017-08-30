@@ -122,7 +122,7 @@ func NewServer(
 	}
 	s.handlers = gorillactx.ClearHandler(CSRF(s.mux))
 	s.mux.Handle("/", s.guest(s.serveHome))
-	s.mux.Handle("/form", handler(s.handleSearch))
+	s.mux.Handle("/search", handler(s.handleSearch))
 	s.mux.Handle("/pets", handler(s.servePets))
 	s.mux.Handle("/pets/add", s.auth(s.serveAddPet))
 	s.mux.Handle("/pets/add/submit", s.auth(s.handleAddPet))
@@ -196,7 +196,7 @@ func parseTemplates(dir string) (*templates, error) {
 	if err != nil {
 		return nil, err
 	}
-	showPetsTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "showpets.tmpl"))
+	showPetsTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "navbar.tmpl"), filepath.Join(dir, "showpets.tmpl"))
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func parseTemplates(dir string) (*templates, error) {
 		addPet:      &tmpl{addPetTmpl, "add"},
 		search:      &tmpl{searchTmpl, "search"},
 		searchReply: &tmpl{searchReplyTmpl, ""},
-		showPets:    &tmpl{showPetsTmpl, ""},
+		showPets:    &tmpl{showPetsTmpl, "search"},
 		login:       &tmpl{loginTmpl, ""},
 		demoXSS:     &tmpl{demoXSSTmpl, ""},
 	}
@@ -637,10 +637,7 @@ func (s *server) handleSearch(w http.ResponseWriter, r *http.Request) *Error {
 		return E(err, "internal server error", http.StatusInternalServerError)
 	}
 
-	if err := s.templates.showPets.Execute(w, pets); err != nil {
-		return E(err, "internal server error", http.StatusInternalServerError)
-	}
-	return nil
+	return s.render(w, r, s.templates.showPets, pets)
 }
 
 func (s *server) servePets(w http.ResponseWriter, r *http.Request) *Error {
@@ -648,11 +645,7 @@ func (s *server) servePets(w http.ResponseWriter, r *http.Request) *Error {
 	if err != nil {
 		return E(err, "Error getting all pets", http.StatusInternalServerError)
 	}
-	err = s.templates.showPets.Execute(w, pets)
-	if err != nil {
-		return E(err, "internal server error", http.StatusInternalServerError)
-	}
-	return nil
+	return s.render(w, r, s.templates.showPets, pets)
 }
 
 func (s *server) servePhoto(w http.ResponseWriter, r *http.Request) *Error {

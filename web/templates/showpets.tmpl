@@ -1,9 +1,9 @@
 {{define "content"}}
   <div class="container">
     <div class="row">
-      {{range .}}
+      {{range .data}}
         <div class="col">
-          <div class="card mb-3" style="width: 20rem;">
+          <div class="card my-3" style="width: 20rem;">
             <div class="card-header">{{.ID}}</div>
             <img class="card-img-top" src="/photos/{{.PhotoID}}" alt="Photo of pet named {{.Name}}.">
             <div class="card-body">
