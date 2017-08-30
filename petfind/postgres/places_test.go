@@ -37,10 +37,10 @@ func TestGetPlaceGroups(t *testing.T) {
 		ap, bp := a[i].Places, b[i].Places
 		for k := range ap {
 			if got, want := ap[k].Name, bp[k].Name; got != want {
-				t.Fatalf("GetPlaceGroups #%d.%d have: %#v want: %#v", i, k, got, want)
+				t.Errorf("GetPlaceGroups name #%d.%d have: %#v want: %#v", i, k, got, want)
 			}
 			if got, want := ap[k].Key, bp[k].Key; got != want {
-				t.Fatalf("GetPlaceGroups #%d.%d have: %#v want: %#v", i, k, got, want)
+				t.Errorf("GetPlaceGroups key #%d.%d have: %#v want: %#v", i, k, got, want)
 			}
 		}
 	}

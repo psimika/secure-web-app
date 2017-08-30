@@ -44,25 +44,11 @@ func (db *store) AddPlaceGroups(groups []petfind.PlaceGroup) error {
 				return err
 			}
 		}
-		//if err = tx.QueryRow(placeGroupInsertStmt, groups[i].Name).Scan(&groups[i].ID); err != nil {
-		//	return err
-		//}
-		//for k := range groups[i].Places {
-		//	if err = tx.QueryRow(placeInsertStmt, groups[i].Places[k].Key, groups[i].Places[k].Name, groups[i].ID).Scan(&groups[i].Places[k].ID); err != nil {
-		//		return err
-		//	}
-		//}
-
 	}
 	return nil
 }
 
 func (db *store) GetPlaceGroups() ([]petfind.PlaceGroup, error) {
-	//const petGetPlaceGroupsQuery = `
-	//SELECT g.id, g.name, p.group_id, p.id, p.name
-	//FROM place_groups g
-	//  JOIN places p ON p.group_id = g.id
-	//`
 	const placeGroupsGetQuery = `
 	SELECT id, name
 	FROM place_groups
@@ -97,15 +83,10 @@ func (db *store) GetPlaceGroups() ([]petfind.PlaceGroup, error) {
 	return groups, nil
 }
 func (db *store) getPlacesByGroupID(groupID int64) ([]petfind.Place, error) {
-	//const petGetPlaceGroupsQuery = `
-	//SELECT g.id, g.name, p.group_id, p.id, p.name
-	//FROM place_groups g
-	//  JOIN places p ON p.group_id = g.id
-	//`
 	const placesGetByGroupIDQuery = `
 	SELECT id, key, name, group_id
 	FROM places
-	where group_id=$1
+	where group_id=$1 order by id
 	`
 	rows, err := db.Query(placesGetByGroupIDQuery, groupID)
 	if err != nil {
