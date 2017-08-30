@@ -613,33 +613,31 @@ func validPetGender(v petfind.PetGender) bool {
 }
 
 type search struct {
-	Location    string
-	LocationErr string
-	Type        string
-	TypeErr     string
-	Age         string
-	AgeErr      string
-	Size        string
-	SizeErr     string
-	Gender      string
-	GenderErr   string
+	Place     string
+	PlaceErr  string
+	Type      string
+	TypeErr   string
+	Age       string
+	AgeErr    string
+	Size      string
+	SizeErr   string
+	Gender    string
+	GenderErr string
 }
 
 func (s *server) handleSearch(w http.ResponseWriter, r *http.Request) *Error {
-	name := r.FormValue("name")
+	placeKey := r.FormValue("place")
+	if placeKey == "" {
+		return E(nil, "location is required", 400)
+	}
+	search := petfind.Search{PlaceKey: placeKey}
 
-	pets, err := s.store.GetAllPets()
+	pets, err := s.store.SearchPets(search)
 	if err != nil {
 		return E(err, "internal server error", http.StatusInternalServerError)
 	}
-	var p *petfind.Pet
-	for i := range pets {
-		if pets[i].Name == name {
-			p = &pets[i]
-		}
-	}
 
-	if err := s.templates.searchReply.Execute(w, p); err != nil {
+	if err := s.templates.showPets.Execute(w, pets); err != nil {
 		return E(err, "internal server error", http.StatusInternalServerError)
 	}
 	return nil

@@ -44,10 +44,11 @@ func (db *store) GetAllPets() ([]petfind.Pet, error) {
 	  p.place_id,
 	  u.id,
 	  u.github_id,
-	  u.login,
 	  u.name,
+	  u.login,
 	  u.email,
 	  u.created,
+	  u.updated,
 	  pl.id,
 	  pl.key,
 	  pl.name,
@@ -87,10 +88,11 @@ func (db *store) GetAllPets() ([]petfind.Pet, error) {
 			&p.PlaceID,
 			&u.ID,
 			&u.GithubID,
-			&u.Login,
 			&u.Name,
+			&u.Login,
 			&u.Email,
 			&u.Created,
+			&u.Updated,
 			&pl.ID,
 			&pl.Key,
 			&pl.Name,
@@ -101,6 +103,63 @@ func (db *store) GetAllPets() ([]petfind.Pet, error) {
 		p.Owner = &u
 		p.Place = &pl
 		pets = append(pets, p)
+	}
+	return pets, nil
+}
+func (db *store) SearchPets(s petfind.Search) ([]*petfind.Pet, error) {
+	const petSearchQuery = `
+	SELECT *
+	FROM pets p
+	  JOIN users u ON p.owner_id = u.id
+	  JOIN places pl ON p.place_id = pl.id
+	  where pl.key = $1
+	`
+	rows, err := db.Query(petSearchQuery, s.PlaceKey)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if cerr := rows.Close(); err == nil {
+			err = cerr
+			return
+		}
+	}()
+
+	pets := make([]*petfind.Pet, 0)
+	for rows.Next() {
+		var p petfind.Pet
+		var u petfind.User
+		var pl petfind.Place
+		if err := rows.Scan(
+			&p.ID,
+			&p.Name,
+			&p.Age,
+			&p.Type,
+			&p.Size,
+			&p.Gender,
+			&p.Notes,
+			&p.Created,
+			&p.Updated,
+			&p.OwnerID,
+			&p.PhotoID,
+			&p.PlaceID,
+			&u.ID,
+			&u.GithubID,
+			&u.Name,
+			&u.Login,
+			&u.Email,
+			&u.Created,
+			&u.Updated,
+			&pl.ID,
+			&pl.Key,
+			&pl.Name,
+			&pl.GroupID,
+		); err != nil {
+			return nil, err
+		}
+		p.Owner = &u
+		p.Place = &pl
+		pets = append(pets, &p)
 	}
 	return pets, nil
 }

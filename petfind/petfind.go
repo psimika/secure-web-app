@@ -106,6 +106,7 @@ var ErrNotFound = errors.New("item not found")
 type Store interface {
 	AddPet(*Pet) error
 	GetAllPets() ([]Pet, error)
+	SearchPets(Search) ([]*Pet, error)
 
 	CreateUser(*User) error
 	GetUser(userID int64) (*User, error)
@@ -125,6 +126,18 @@ type Store interface {
 
 	MakeSchema() error
 	DropSchema() error
+}
+
+type Search struct {
+	PlaceKey  string
+	Type      int64
+	Age       int64
+	Gender    int64
+	Size      int64
+	UseType   bool
+	UseAge    bool
+	UseGender bool
+	UseSize   bool
 }
 
 // User holds information about a user that is signed in the application.
