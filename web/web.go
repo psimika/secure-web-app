@@ -97,8 +97,7 @@ func NewServer(
 	CSRF func(http.Handler) http.Handler,
 	templatePath string,
 	photoStore petfind.PhotoStore,
-	githubID string,
-	githubSecret string,
+	githubOAuth *oauth2.Config,
 ) (http.Handler, error) {
 	t, err := parseTemplates(filepath.Join(templatePath, "templates"))
 	if err != nil {
@@ -113,7 +112,7 @@ func NewServer(
 		mux:           http.NewServeMux(),
 		store:         store,
 		templates:     t,
-		github:        newGitHubOAuthConfig(githubID, githubSecret),
+		github:        githubOAuth,
 		sessions:      sessionStore,
 		sessionTTL:    sessionTTL,
 		sessionMaxTTL: sessionMaxTTL,
@@ -167,7 +166,7 @@ func prepareFavicons(assetsPath string) map[string]string {
 	}
 	return favicons
 }
-func newGitHubOAuthConfig(clientID, clientSecret string) *oauth2.Config {
+func NewGitHubOAuthConfig(clientID, clientSecret string) *oauth2.Config {
 	return &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
