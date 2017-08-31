@@ -404,7 +404,8 @@ func (s *server) postFormPet(r *http.Request) (*petfind.Pet, addPetForm, error) 
 
 	placeKey := r.PostFormValue("place")
 	form.Place = placeKey
-	if valid, reason := s.validPlace(placeKey); !valid {
+	place, valid, reason := s.validPlace(placeKey)
+	if !valid {
 		form.Invalid = true
 		form.PlaceErr = reason.String()
 	}
@@ -465,7 +466,7 @@ func (s *server) postFormPet(r *http.Request) (*petfind.Pet, addPetForm, error) 
 		return nil, form, fmt.Errorf("error getting form file for photo validation: %v", err)
 	}
 
-	p := &petfind.Pet{Name: name, Age: age, Size: size, Type: t, Gender: gender, Notes: notes}
+	p := &petfind.Pet{Name: name, Age: age, Size: size, Type: t, Gender: gender, Notes: notes, PlaceID: place.ID}
 	return p, form, nil
 }
 
@@ -479,22 +480,24 @@ func validContentType(v string) bool {
 	return false
 }
 
-func (s *server) validPlace(placeKey string) (bool, invalidReason) {
+func (s *server) validPlace(placeKey string) (*petfind.Place, bool, invalidReason) {
 	if placeKey == "" {
-		return false, "Pet's location is required."
+		return nil, false, "Pet's location is required."
 	}
 	found := false
+	var place *petfind.Place
 	for _, g := range s.placeGroups {
 		for _, p := range g.Places {
 			if p.Key == placeKey {
 				found = true
+				place = &p
 			}
 		}
 	}
 	if !found {
-		return false, "Unrecognized location."
+		return nil, false, "Unrecognized location."
 	}
-	return true, ""
+	return place, true, ""
 }
 
 var nameRegex = regexp.MustCompile(`^[a-zA-Z]+$`)
@@ -646,7 +649,8 @@ func (s *server) handleSearch(w http.ResponseWriter, r *http.Request) *Error {
 
 	placeKey := r.FormValue("place")
 	form.Place = placeKey
-	if valid, reason := s.validPlace(placeKey); !valid {
+	_, valid, reason := s.validPlace(placeKey)
+	if !valid {
 		form.Invalid = true
 		form.PlaceErr = reason.String()
 	}
