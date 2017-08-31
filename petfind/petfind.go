@@ -108,6 +108,8 @@ type Store interface {
 	GetPet(petID int64) (*Pet, error)
 	GetAllPets() ([]Pet, error)
 	SearchPets(Search) ([]*Pet, error)
+	CountPets() (int64, error)
+	GetFeaturedPets() ([]*Pet, error)
 
 	CreateUser(*User) error
 	GetUser(userID int64) (*User, error)

@@ -294,6 +294,56 @@ func TestSearchPets(t *testing.T) {
 	}
 }
 
+func TestCountPets(t *testing.T) {
+	s := setup(t)
+	defer teardown(t, s)
+	addTestPet(t, s)
+
+	got, err := s.CountPets()
+	if err != nil {
+		t.Fatalf("CountPets failed: %v", err)
+	}
+	if want := int64(1); got != want {
+		t.Fatalf("CountPets got: %d, want: %d", got, want)
+	}
+}
+
+func TestGetFeaturedPets(t *testing.T) {
+	s := setup(t)
+	defer teardown(t, s)
+	// Add a pet here.
+	addTestPet(t, s)
+
+	// Add 3 more pets.
+	petsToAdd := []*petfind.Pet{
+		{Name: "zazzles1", OwnerID: 1, PhotoID: 1, PlaceID: 1},
+		{Name: "zazzles2", OwnerID: 1, PhotoID: 1, PlaceID: 1},
+		{Name: "zazzles3", OwnerID: 1, PhotoID: 1, PlaceID: 1},
+	}
+	for _, p := range petsToAdd {
+		if err := s.AddPet(p); err != nil {
+			t.Fatalf("AddPet failed: %v", err)
+		}
+	}
+
+	pets, err := s.GetFeaturedPets()
+	if err != nil {
+		t.Fatalf("GetFeaturedPets failed: %v", err)
+	}
+	if got, want := len(pets), 3; got != want {
+		t.Fatalf("GetFeaturedPets got %d results, want %d", got, want)
+	}
+	if got, want := pets[0].Name, "zazzles3"; got != want {
+		t.Fatalf("GetFeaturedPets first result Name = %v, want %v", got, want)
+	}
+	if got, want := pets[1].Name, "zazzles2"; got != want {
+		t.Fatalf("GetFeaturedPets second result Name = %v, want %v", got, want)
+	}
+	if got, want := pets[2].Name, "zazzles1"; got != want {
+		t.Fatalf("GetFeaturedPets third result Name = %v, want %v", got, want)
+	}
+}
+
 func addTestPet(t *testing.T, s petfind.Store) *petfind.Pet {
 	// Create pet's owner.
 	githubID := int64(5)
