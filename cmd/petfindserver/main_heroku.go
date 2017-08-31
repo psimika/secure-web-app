@@ -121,7 +121,7 @@ func main() {
 		CSRF,
 		tmplPath,
 		photos,
-		web.NewGitHubOAuthConfig(*githubID, *githubSecret),
+		web.NewGitHubOAuthConfig(githubID, githubSecret),
 	)
 	if err != nil {
 		log.Println("NewServer failed:", err)
