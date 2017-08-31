@@ -1,9 +1,12 @@
 {{define "content"}}
-  {{if not .}}
-    no pet found
-  {{else}}
-    <span>Name: {{.Name}}</span>
-    <br>
-    <span>Added: {{.Created}}</span>
-  {{end}}
+  <div class="container">
+    <div class="row">
+      <div class="col">
+        {{block "searchform" .}}{{end}}
+      </div>
+    </div>
+    <div class="row">
+      {{block "pets" .}}{{end}}
+    </div>
+  </div>
 {{end}}

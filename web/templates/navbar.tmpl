@@ -18,6 +18,15 @@
             <a class="nav-link" href="/">Home</a>
           </li>
         {{end}}
+        {{if eq .nav "search"}}
+          <li class="nav-item active">
+            <a class="nav-link" href="/search">Search <span class="sr-only">(current)</span></a>
+          </li>
+        {{else}}
+          <li class="nav-item">
+            <a class="nav-link" href="/search">Search</a>
+          </li>
+        {{end}}
         {{if eq .nav "add"}}
           <li class="nav-item active">
             <a class="nav-link" href="/pets/add">Give a pet <span class="sr-only">(current)</span></a>

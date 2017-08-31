@@ -122,7 +122,8 @@ func NewServer(
 	}
 	s.handlers = gorillactx.ClearHandler(CSRF(s.mux))
 	s.mux.Handle("/", s.guest(s.serveHome))
-	s.mux.Handle("/search", handler(s.handleSearch))
+	s.mux.Handle("/search", handler(s.serveSearch))
+	s.mux.Handle("/search/submit", handler(s.handleSearch))
 	s.mux.Handle("/pets", handler(s.servePets))
 	s.mux.Handle("/pets/add", s.auth(s.serveAddPet))
 	s.mux.Handle("/pets/add/submit", s.auth(s.handleAddPet))
@@ -180,36 +181,69 @@ func newGitHubOAuthConfig(clientID, clientSecret string) *oauth2.Config {
 }
 
 func parseTemplates(dir string) (*templates, error) {
-	homeTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "navbar.tmpl"), filepath.Join(dir, "searchform.tmpl"), filepath.Join(dir, "home.tmpl"), filepath.Join(dir, "pets.tmpl"))
+	homeTmpl, err := template.ParseFiles(
+		filepath.Join(dir, "base.tmpl"),
+		filepath.Join(dir, "navbar.tmpl"),
+		filepath.Join(dir, "searchform.tmpl"),
+		filepath.Join(dir, "home.tmpl"),
+		filepath.Join(dir, "pets.tmpl"),
+	)
 	if err != nil {
 		return nil, err
 	}
-	addPetTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "navbar.tmpl"), filepath.Join(dir, "addpet.tmpl"))
+	addPetTmpl, err := template.ParseFiles(
+		filepath.Join(dir, "base.tmpl"),
+		filepath.Join(dir, "navbar.tmpl"),
+		filepath.Join(dir, "addpet.tmpl"),
+	)
 	if err != nil {
 		return nil, err
 	}
-	searchTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "search.tmpl"))
+	searchTmpl, err := template.ParseFiles(
+		filepath.Join(dir, "base.tmpl"),
+		filepath.Join(dir, "navbar.tmpl"),
+		filepath.Join(dir, "search.tmpl"),
+		filepath.Join(dir, "searchform.tmpl"),
+	)
 	if err != nil {
 		return nil, err
 	}
-	searchReplyTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "searchreply.tmpl"))
+	searchReplyTmpl, err := template.ParseFiles(
+		filepath.Join(dir, "base.tmpl"),
+		filepath.Join(dir, "navbar.tmpl"),
+		filepath.Join(dir, "searchreply.tmpl"),
+		filepath.Join(dir, "searchform.tmpl"),
+		filepath.Join(dir, "pets.tmpl"),
+	)
 	if err != nil {
 		return nil, err
 	}
-	showPetsTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "navbar.tmpl"), filepath.Join(dir, "showpets.tmpl"), filepath.Join(dir, "pets.tmpl"))
+	showPetsTmpl, err := template.ParseFiles(
+		filepath.Join(dir, "base.tmpl"),
+		filepath.Join(dir, "navbar.tmpl"),
+		filepath.Join(dir, "showpets.tmpl"),
+		filepath.Join(dir, "pets.tmpl"),
+	)
 	if err != nil {
 		return nil, err
 	}
-	demoXSSTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "demo-xss.tmpl"))
+	demoXSSTmpl, err := template.ParseFiles(
+		filepath.Join(dir, "base.tmpl"),
+		filepath.Join(dir, "demo-xss.tmpl"),
+	)
 	if err != nil {
 		return nil, err
 	}
-	loginTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "navbar.tmpl"), filepath.Join(dir, "login.tmpl"))
+	loginTmpl, err := template.ParseFiles(
+		filepath.Join(dir, "base.tmpl"),
+		filepath.Join(dir, "navbar.tmpl"),
+		filepath.Join(dir, "login.tmpl"),
+	)
 	t := &templates{
 		home:        &tmpl{homeTmpl, "home"},
 		addPet:      &tmpl{addPetTmpl, "add"},
 		search:      &tmpl{searchTmpl, "search"},
-		searchReply: &tmpl{searchReplyTmpl, ""},
+		searchReply: &tmpl{searchReplyTmpl, "search"},
 		showPets:    &tmpl{showPetsTmpl, "search"},
 		login:       &tmpl{loginTmpl, ""},
 		demoXSS:     &tmpl{demoXSSTmpl, ""},
@@ -262,6 +296,7 @@ func (s *server) render(w http.ResponseWriter, r *http.Request, tmpl *tmpl, data
 	}
 
 	if err := tmpl.Execute(w, m); err != nil {
+		log.Printf("could not serve %s: %v", tmpl.Name(), err)
 		return E(err, fmt.Sprintf("could not serve %s", tmpl.Name()), http.StatusInternalServerError)
 	}
 	return nil
@@ -342,7 +377,7 @@ func (s *server) handleAddPet(w http.ResponseWriter, r *http.Request) *Error {
 		return E(err, "Error adding pet", http.StatusInternalServerError)
 	}
 
-	http.Redirect(w, r, "/pets", http.StatusFound)
+	http.Redirect(w, r, "/", http.StatusFound)
 	return nil
 }
 
@@ -709,7 +744,7 @@ func (s *server) handleSearch(w http.ResponseWriter, r *http.Request) *Error {
 	}
 
 	if form.Invalid {
-		return s.render(w, r, s.templates.home, nil, form)
+		return s.render(w, r, s.templates.search, nil, form)
 	}
 
 	pets, err := s.store.SearchPets(search)
@@ -717,7 +752,12 @@ func (s *server) handleSearch(w http.ResponseWriter, r *http.Request) *Error {
 		return E(err, "internal server error", http.StatusInternalServerError)
 	}
 
-	return s.render(w, r, s.templates.showPets, pets, nil)
+	return s.render(w, r, s.templates.searchReply, pets, form)
+}
+
+func (s *server) serveSearch(w http.ResponseWriter, r *http.Request) *Error {
+	form := searchForm{}
+	return s.render(w, r, s.templates.search, nil, form)
 }
 
 func (s *server) servePets(w http.ResponseWriter, r *http.Request) *Error {

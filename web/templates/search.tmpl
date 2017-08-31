@@ -1,9 +1,9 @@
 {{define "content"}}
-  <nav>
-    <a href="/pets/add">Add a pet</a>
-  </nav>
-  <form action="/form" method="GET">
-	<input name="name">
-	<input type="submit" value="Search for pet">
-  </form>
+  <div class="container">
+    <div class="row">
+      <div class="col">
+        {{block "searchform" .}}{{end}}
+      </div>
+    </div>
+  </div>
 {{end}}
