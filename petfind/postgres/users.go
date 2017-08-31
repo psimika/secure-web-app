@@ -3,16 +3,15 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/psimika/secure-web-app/petfind"
 )
 
 func (db *store) CreateUser(u *petfind.User) error {
 	const userInsertStmt = `
-	INSERT INTO users(github_id, login, name, email, created)
-	VALUES ($1, $2, $3, $4, now())
-	RETURNING id, created
+	INSERT INTO users(github_id, login, name, email, created, updated)
+	VALUES ($1, $2, $3, $4, now(), now())
+	RETURNING id, created, updated
 	`
 	stmt, err := db.Prepare(userInsertStmt)
 	if err != nil {
@@ -24,14 +23,10 @@ func (db *store) CreateUser(u *petfind.User) error {
 			return
 		}
 	}()
-	var id int64
-	var created time.Time
-	err = stmt.QueryRow(u.GithubID, u.Login, u.Name, u.Email).Scan(&id, &created)
+	err = stmt.QueryRow(u.GithubID, u.Login, u.Name, u.Email).Scan(&u.ID, &u.Created, &u.Updated)
 	if err != nil {
 		return err
 	}
-	u.ID = id
-	u.Created = created
 	return nil
 }
 
@@ -43,7 +38,8 @@ func (db *store) GetUser(userID int64) (*petfind.User, error) {
 	  login,
 	  name,
 	  email,
-	  created
+	  created,
+	  updated
 	FROM users
 	WHERE id = $1
 	`
@@ -55,6 +51,7 @@ func (db *store) GetUser(userID int64) (*petfind.User, error) {
 		&u.Name,
 		&u.Email,
 		&u.Created,
+		&u.Updated,
 	)
 	if err == sql.ErrNoRows {
 		return nil, petfind.ErrNotFound

@@ -105,6 +105,7 @@ var ErrNotFound = errors.New("item not found")
 // retrieving data.
 type Store interface {
 	AddPet(*Pet) error
+	GetPet(petID int64) (*Pet, error)
 	GetAllPets() ([]Pet, error)
 	SearchPets(Search) ([]*Pet, error)
 
@@ -130,14 +131,14 @@ type Store interface {
 
 type Search struct {
 	PlaceKey  string
-	Type      PetType
 	Age       PetAge
 	Gender    PetGender
 	Size      PetSize
-	UseType   bool
+	Type      PetType
 	UseAge    bool
 	UseGender bool
 	UseSize   bool
+	UseType   bool
 }
 
 // User holds information about a user that is signed in the application.

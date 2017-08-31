@@ -1,6 +1,8 @@
 package postgres
 
 import (
+	"database/sql"
+
 	"github.com/psimika/secure-web-app/petfind"
 )
 
@@ -25,6 +27,53 @@ func (db *store) AddPet(p *petfind.Pet) error {
 		return err
 	}
 	return nil
+}
+
+func (db *store) GetPet(petID int64) (*petfind.Pet, error) {
+	const petGetQuery = `
+	SELECT *
+	FROM pets p
+	  JOIN users u ON p.owner_id = u.id
+	  JOIN places pl ON p.place_id = pl.id
+	WHERE p.id = $1
+	`
+	p := new(petfind.Pet)
+	u := new(petfind.User)
+	pl := new(petfind.Place)
+	err := db.QueryRow(petGetQuery, petID).Scan(
+		&p.ID,
+		&p.Name,
+		&p.Age,
+		&p.Type,
+		&p.Size,
+		&p.Gender,
+		&p.Notes,
+		&p.Created,
+		&p.Updated,
+		&p.OwnerID,
+		&p.PhotoID,
+		&p.PlaceID,
+		&u.ID,
+		&u.GithubID,
+		&u.Name,
+		&u.Login,
+		&u.Email,
+		&u.Created,
+		&u.Updated,
+		&pl.ID,
+		&pl.Key,
+		&pl.Name,
+		&pl.GroupID,
+	)
+	if err == sql.ErrNoRows {
+		return nil, petfind.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	p.Owner = u
+	p.Place = pl
+	return p, nil
 }
 
 func (db *store) GetAllPets() ([]petfind.Pet, error) {
@@ -107,14 +156,171 @@ func (db *store) GetAllPets() ([]petfind.Pet, error) {
 	return pets, nil
 }
 func (db *store) SearchPets(s petfind.Search) ([]*petfind.Pet, error) {
-	const petSearchQuery = `
-	SELECT *
-	FROM pets p
-	  JOIN users u ON p.owner_id = u.id
-	  JOIN places pl ON p.place_id = pl.id
-	  where pl.key = $1
-	`
-	rows, err := db.Query(petSearchQuery, s.PlaceKey)
+	var q string
+	var rows *sql.Rows
+	var err error
+	switch {
+	// 0000
+	default:
+		q = `SELECT *
+	    FROM pets p
+	      JOIN users u ON p.owner_id = u.id
+	      JOIN places pl ON p.place_id = pl.id
+	      WHERE pl.key = $1`
+		rows, err = db.Query(q, s.PlaceKey)
+	// 0001
+	case !s.UseAge && !s.UseGender && !s.UseSize && s.UseType:
+		q = `SELECT *
+	    FROM pets p
+	      JOIN users u ON p.owner_id = u.id
+	      JOIN places pl ON p.place_id = pl.id
+	      WHERE pl.key = $1
+	      AND p.type = $2`
+		rows, err = db.Query(q, s.PlaceKey, s.Type)
+	// 0010
+	case !s.UseAge && !s.UseGender && s.UseSize && !s.UseType:
+		q = `SELECT *
+	    FROM pets p
+	      JOIN users u ON p.owner_id = u.id
+	      JOIN places pl ON p.place_id = pl.id
+	      WHERE pl.key = $1
+	      AND p.size = $2`
+		rows, err = db.Query(q, s.PlaceKey, s.Size)
+	// 0011
+	case !s.UseAge && !s.UseGender && s.UseSize && s.UseType:
+		q = `SELECT *
+	    FROM pets p
+	      JOIN users u ON p.owner_id = u.id
+	      JOIN places pl ON p.place_id = pl.id
+	      WHERE pl.key = $1
+	      AND p.size = $2
+	      AND p.type = $3`
+		rows, err = db.Query(q, s.PlaceKey, s.Size, s.Type)
+	// 0100
+	case !s.UseAge && s.UseGender && !s.UseSize && !s.UseType:
+		q = `SELECT *
+	    FROM pets p
+	      JOIN users u ON p.owner_id = u.id
+	      JOIN places pl ON p.place_id = pl.id
+	      WHERE pl.key = $1
+	      AND p.gender = $2`
+		rows, err = db.Query(q, s.PlaceKey, s.Gender)
+	// 0101
+	case !s.UseAge && s.UseGender && !s.UseSize && s.UseType:
+		q = `SELECT *
+	    FROM pets p
+	      JOIN users u ON p.owner_id = u.id
+	      JOIN places pl ON p.place_id = pl.id
+	      WHERE pl.key = $1
+	      AND p.gender = $2
+	      AND p.type = $3`
+		rows, err = db.Query(q, s.PlaceKey, s.Gender, s.Type)
+	// 0110
+	case !s.UseAge && s.UseGender && s.UseSize && !s.UseType:
+		q = `SELECT *
+	    FROM pets p
+	      JOIN users u ON p.owner_id = u.id
+	      JOIN places pl ON p.place_id = pl.id
+	      WHERE pl.key = $1
+	      AND p.gender = $2
+	      AND p.size = $3`
+		rows, err = db.Query(q, s.PlaceKey, s.Gender, s.Size)
+	// 0111
+	case !s.UseAge && s.UseGender && s.UseSize && s.UseType:
+		q = `SELECT *
+	    FROM pets p
+	      JOIN users u ON p.owner_id = u.id
+	      JOIN places pl ON p.place_id = pl.id
+	      WHERE pl.key = $1
+	      AND p.gender = $2
+	      AND p.size = $3
+		  AND p.type = $4`
+		rows, err = db.Query(q, s.PlaceKey, s.Gender, s.Size, s.Type)
+	// 1000
+	case s.UseAge && !s.UseGender && !s.UseSize && !s.UseType:
+		q = `SELECT *
+	    FROM pets p
+	      JOIN users u ON p.owner_id = u.id
+	      JOIN places pl ON p.place_id = pl.id
+	      WHERE pl.key = $1
+	      AND p.age = $2`
+		rows, err = db.Query(q, s.PlaceKey, s.Age)
+	// 1001
+	case s.UseAge && !s.UseGender && !s.UseSize && s.UseType:
+		q = `SELECT *
+	    FROM pets p
+	      JOIN users u ON p.owner_id = u.id
+	      JOIN places pl ON p.place_id = pl.id
+	      WHERE pl.key = $1
+	      AND p.age = $2
+		  AND p.type = $3`
+		rows, err = db.Query(q, s.PlaceKey, s.Age, s.Type)
+	// 1010
+	case s.UseAge && !s.UseGender && s.UseSize && !s.UseType:
+		q = `SELECT *
+	    FROM pets p
+	      JOIN users u ON p.owner_id = u.id
+	      JOIN places pl ON p.place_id = pl.id
+	      WHERE pl.key = $1
+	      AND p.age = $2
+		  AND p.size = $3`
+		rows, err = db.Query(q, s.PlaceKey, s.Age, s.Size)
+	// 1011
+	case s.UseAge && !s.UseGender && s.UseSize && s.UseType:
+		q = `SELECT *
+	    FROM pets p
+	      JOIN users u ON p.owner_id = u.id
+	      JOIN places pl ON p.place_id = pl.id
+	      WHERE pl.key = $1
+	      AND p.age = $2
+		  AND p.size = $3
+		  AND p.type = $4`
+		rows, err = db.Query(q, s.PlaceKey, s.Age, s.Size, s.Type)
+	// 1100
+	case s.UseAge && s.UseGender && !s.UseSize && !s.UseType:
+		q = `SELECT *
+	    FROM pets p
+	      JOIN users u ON p.owner_id = u.id
+	      JOIN places pl ON p.place_id = pl.id
+	      WHERE pl.key = $1
+	      AND p.age = $2
+		  AND p.gender = $3`
+		rows, err = db.Query(q, s.PlaceKey, s.Age, s.Gender)
+	// 1101
+	case s.UseAge && s.UseGender && !s.UseSize && s.UseType:
+		q = `SELECT *
+	    FROM pets p
+	      JOIN users u ON p.owner_id = u.id
+	      JOIN places pl ON p.place_id = pl.id
+	      WHERE pl.key = $1
+	      AND p.age = $2
+		  AND p.gender = $3
+		  AND p.type = $4`
+		rows, err = db.Query(q, s.PlaceKey, s.Age, s.Gender, s.Type)
+	// 1110
+	case s.UseAge && s.UseGender && s.UseSize && !s.UseType:
+		q = `SELECT *
+	    FROM pets p
+	      JOIN users u ON p.owner_id = u.id
+	      JOIN places pl ON p.place_id = pl.id
+	      WHERE pl.key = $1
+	      AND p.age = $2
+		  AND p.gender = $3
+		  AND p.size = $4`
+		rows, err = db.Query(q, s.PlaceKey, s.Age, s.Gender, s.Size)
+	// 1111
+	case s.UseAge && s.UseGender && s.UseSize && s.UseType:
+		q = `SELECT *
+	    FROM pets p
+	      JOIN users u ON p.owner_id = u.id
+	      JOIN places pl ON p.place_id = pl.id
+	      WHERE pl.key = $1
+	      AND p.age = $2
+		  AND p.gender = $3
+		  AND p.size = $4
+		  AND p.type = $5`
+		rows, err = db.Query(q, s.PlaceKey, s.Age, s.Gender, s.Size, s.Type)
+	}
 	if err != nil {
 		return nil, err
 	}

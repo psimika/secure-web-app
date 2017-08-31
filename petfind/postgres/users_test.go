@@ -41,6 +41,7 @@ func TestCreateUser(t *testing.T) {
 
 	// Ignore time field.
 	user.Created = time.Time{}
+	user.Updated = time.Time{}
 	want = &petfind.User{ID: 1, Name: "Jane Doe", GithubID: githubID}
 	if got := user; !reflect.DeepEqual(got, want) {
 		t.Fatalf("GetUser \nhave: %#v\nwant: %#v", got, want)
