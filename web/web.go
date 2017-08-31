@@ -671,6 +671,32 @@ func (s *server) handleSearch(w http.ResponseWriter, r *http.Request) *Error {
 		}
 	}
 
+	sizeStr := r.FormValue("size")
+	form.Size = sizeStr
+	if sizeStr != "" {
+		size, valid, reason := validSize(sizeStr)
+		if !valid {
+			form.Invalid = true
+			form.SizeErr = reason.String()
+		} else {
+			search.Size = size
+			search.UseSize = true
+		}
+	}
+
+	genderStr := r.FormValue("gender")
+	form.Gender = genderStr
+	if genderStr != "" {
+		gender, valid, reason := validGender(genderStr)
+		if !valid {
+			form.Invalid = true
+			form.GenderErr = reason.String()
+		} else {
+			search.Gender = gender
+			search.UseGender = true
+		}
+	}
+
 	if form.Invalid {
 		return s.render(w, r, s.templates.home, form)
 	}

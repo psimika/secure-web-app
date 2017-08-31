@@ -10,7 +10,7 @@
                 {{range .groups}}
                   <optgroup label="{{.Name}}">
                     {{range .Places}}
-                      <option value="{{.ID}} {{if eq .Key $place}}selected{{end}}">{{.Name}}</option>
+                      <option value="{{.Key}}" {{if eq .Key $place}}selected{{end}}>{{.Name}}</option>
                     {{end}}
                   </optgroup>
                 {{end}}
@@ -42,56 +42,28 @@
               </div>
 
               <label for="size" class="sr-only">Size</label>
-              <select id="size" class="form-control mb-2 mr-sm-2 mb-sm-0">
-                <option value="any">Any Size</option>
-                <option value="1">Small</option>
-                <option value="2">Medium</option>
-                <option value="3">Large</option>
-                <option value="4">Huge</option>
+              <select id="size" class="form-control mb-2 mr-sm-2 mb-sm-0 {{if .data.SizeErr}}is-invalid{{end}}" name="size">
+                <option value="">Any Size</option>
+                <option value="1" {{if eq .data.Size "1"}}selected{{end}}>Small</option>
+                <option value="2" {{if eq .data.Size "2"}}selected{{end}}>Medium</option>
+                <option value="3" {{if eq .data.Size "3"}}selected{{end}}>Large</option>
+                <option value="4" {{if eq .data.Size "4"}}selected{{end}}>Huge</option>
               </select>
+              <div class="invalid-feedback">
+                {{.data.SizeErr}}
+              </div>
 
               <label for="gender" class="sr-only">Gender</label>
-              <select id="gender" class="form-control mb-2 mr-sm-2 mb-sm-0">
-                <option value="any">Any Gender</option>
-                <option value="1">Male</option>
-                <option value="2">Female</option>
+              <select id="gender" class="form-control mb-2 mr-sm-2 mb-sm-0 {{if .data.GenderErr}}is-invalid{{end}}" name="gender">
+                <option value="">Any Gender</option>
+                <option value="1" {{if eq .data.Gender "1"}}selected{{end}}>Male</option>
+                <option value="2" {{if eq .data.Gender "2"}}selected{{end}}>Female</option>
               </select>
+              <div class="invalid-feedback">
+                {{.data.GenderErr}}
+              </div>
               <button type="submit" class="btn btn-outline-success">Search</button>
             </form>
           </div>
         </div>
       {{end}}
-{{define "js"}}
-<script>
-  $( function() {
-    console.log($("#location"));
-    var availableTags = [
-      "ActionScript",
-      "AppleScript",
-      "Asp",
-      "BASIC",
-      "C",
-      "C++",
-      "Clojure",
-      "COBOL",
-      "ColdFusion",
-      "Erlang",
-      "Fortran",
-      "Groovy",
-      "Haskell",
-      "Java",
-      "JavaScript",
-      "Lisp",
-      "Perl",
-      "PHP",
-      "Python",
-      "Ruby",
-      "Scala",
-      "Scheme"
-    ];
-    $( "#location" ).autocomplete({
-      source: availableTags
-    });
-  } );
-</script>
-{{end}}
