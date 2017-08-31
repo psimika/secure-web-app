@@ -200,7 +200,7 @@ func fromSessionGetString(session *sessions.Session, key string) (string, error)
 // ---
 
 func (s *server) serveLogin(w http.ResponseWriter, r *http.Request) *Error {
-	return s.render(w, r, s.templates.login, nil)
+	return s.render(w, r, s.templates.login, nil, nil)
 }
 
 func (s *server) handleLogout(w http.ResponseWriter, r *http.Request) *Error {

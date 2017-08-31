@@ -9,17 +9,17 @@
             {{ .csrfField }}
             <div class="form-group">
               <label for="name">Name</label>
-              <input type="text" class="form-control {{if .data.NameErr}}is-invalid{{end}}" id="name" placeholder="Enter pet's name" name="name" value="{{.data.Name}}">
+              <input type="text" class="form-control {{if .form.NameErr}}is-invalid{{end}}" id="name" placeholder="Enter pet's name" name="name" value="{{.form.Name}}">
               <div class="invalid-feedback">
-                {{.data.NameErr}}
+                {{.form.NameErr}}
               </div>
             </div>
 
             <div class="form-group">
               <label for="place">Location</label>
-              <select class="form-control {{if .data.PlaceErr}}is-invalid{{end}}" id="place" name="place">
+              <select class="form-control {{if .form.PlaceErr}}is-invalid{{end}}" id="place" name="place">
                 <option value="" selected disabled hidden>Choose location</option>
-                {{$place:=.data.Place}}
+                {{$place:=.form.Place}}
                 {{range .groups}}
                   <optgroup label="{{.Name}}">
                     {{range .Places}}
@@ -29,71 +29,71 @@
                 {{end}}
               </select>
               <div class="invalid-feedback">
-                {{.data.PlaceErr}}
+                {{.form.PlaceErr}}
               </div>
             </div>
 
             <div class="form-group">
               <label for="typeSelect">Type</label>
-              <select class="form-control {{if .data.TypeErr}}is-invalid{{end}}" id="typeSelect" name="type">
+              <select class="form-control {{if .form.TypeErr}}is-invalid{{end}}" id="typeSelect" name="type">
                 <option value="" selected disabled hidden>Choose pet type</option>
-                <option value="1" {{if eq .data.Type "1"}}selected{{end}}>Cat</option>
-                <option value="2" {{if eq .data.Type "2"}}selected{{end}}>Dog</option>
+                <option value="1" {{if eq .form.Type "1"}}selected{{end}}>Cat</option>
+                <option value="2" {{if eq .form.Type "2"}}selected{{end}}>Dog</option>
               </select>
               <div class="invalid-feedback">
-                {{.data.TypeErr}}
+                {{.form.TypeErr}}
               </div>
             </div>
             <div class="form-group">
               <label for="sizeSelect">Age</label>
-              <select class="form-control {{if .data.AgeErr}}is-invalid{{end}}" id="sizeSelect" name="age">
-                <option value="0" {{if eq .data.Age "0"}}selected{{end}}>Unknown</option>
-                <option value="1" {{if eq .data.Age "1"}}selected{{end}}>Baby</option>
-                <option value="2" {{if eq .data.Age "2"}}selected{{end}}>Young</option>
-                <option value="3" {{if eq .data.Age "3"}}selected{{end}}>Adult</option>
-                <option value="4" {{if eq .data.Age "4"}}selected{{end}}>Senior</option>
+              <select class="form-control {{if .form.AgeErr}}is-invalid{{end}}" id="sizeSelect" name="age">
+                <option value="0" {{if eq .form.Age "0"}}selected{{end}}>Unknown</option>
+                <option value="1" {{if eq .form.Age "1"}}selected{{end}}>Baby</option>
+                <option value="2" {{if eq .form.Age "2"}}selected{{end}}>Young</option>
+                <option value="3" {{if eq .form.Age "3"}}selected{{end}}>Adult</option>
+                <option value="4" {{if eq .form.Age "4"}}selected{{end}}>Senior</option>
               </select>
               <div class="invalid-feedback">
-                {{.data.AgeErr}}
+                {{.form.AgeErr}}
               </div>
             </div>
             <div class="form-group">
               <label for="sizeSelect">Size</label>
-              <select class="form-control {{if .data.SizeErr}}is-invalid{{end}}" id="sizeSelect" name="size">
+              <select class="form-control {{if .form.SizeErr}}is-invalid{{end}}" id="sizeSelect" name="size">
                 <option value="" selected disabled hidden>Choose size</option>
-                <option value="1" {{if eq .data.Size "1"}}selected{{end}}>Small</option>
-                <option value="2" {{if eq .data.Size "2"}}selected{{end}}>Medium</option>
-                <option value="3" {{if eq .data.Size "3"}}selected{{end}}>Large</option>
-                <option value="4" {{if eq .data.Size "4"}}selected{{end}}>Huge</option>
+                <option value="1" {{if eq .form.Size "1"}}selected{{end}}>Small</option>
+                <option value="2" {{if eq .form.Size "2"}}selected{{end}}>Medium</option>
+                <option value="3" {{if eq .form.Size "3"}}selected{{end}}>Large</option>
+                <option value="4" {{if eq .form.Size "4"}}selected{{end}}>Huge</option>
               </select>
               <div class="invalid-feedback">
-                {{.data.SizeErr}}
+                {{.form.SizeErr}}
               </div>
             </div>
             <div class="form-group">
               <label for="genderSelect">Gender</label>
-              <select class="form-control {{if .data.GenderErr}}is-invalid{{end}}" id="genderSelect" name="gender">
-                <option value="0" {{if eq .data.Gender "0"}}selected{{end}}>Unknown</option>
-                <option value="1" {{if eq .data.Gender "1"}}selected{{end}}>Male</option>
-                <option value="2" {{if eq .data.Gender "2"}}selected{{end}}>Female</option>
+              <select class="form-control {{if .form.GenderErr}}is-invalid{{end}}" id="genderSelect" name="gender">
+                <option value="0" {{if eq .form.Gender "0"}}selected{{end}}>Unknown</option>
+                <option value="1" {{if eq .form.Gender "1"}}selected{{end}}>Male</option>
+                <option value="2" {{if eq .form.Gender "2"}}selected{{end}}>Female</option>
               </select>
               <div class="invalid-feedback">
-                {{.data.GenderErr}}
+                {{.form.GenderErr}}
               </div>
             </div>
             <div class="form-group">
               <label for="notesTextArea">Notes</label>
-              <textarea class="form-control {{if .data.NotesErr}}is-invalid{{end}}" id="notesTextArea" rows="4" name="notes" placeholder="Enter a description or other details.">{{.data.Notes}}</textarea>
+              <textarea class="form-control {{if .form.NotesErr}}is-invalid{{end}}" id="notesTextArea" rows="4" name="notes" placeholder="Enter a description or other details.">{{.form.Notes}}</textarea>
               <div class="invalid-feedback">
-                {{.data.NotesErr}}
+                {{.form.NotesErr}}
               </div>
             </div>
             <div class="form-group">
               <label for="photo">Pet's photo</label>
-              <input type="file" class="form-control-file {{if .data.PhotoErr}}is-invalid{{end}}" id="photo" accept="image/*" name="photo">
-              {{if .data.PhotoErr}}
+              <input type="file" class="form-control-file {{if .form.PhotoErr}}is-invalid{{end}}" id="photo" accept="image/*" name="photo">
+              {{if .form.PhotoErr}}
                 <div class="invalid-feedback" style="display:block">
-                  {{.data.PhotoErr}}
+                  {{.form.PhotoErr}}
                 </div>
               {{end}}
             </div>

@@ -6,5 +6,5 @@ import (
 
 func (s *server) demoXSS(w http.ResponseWriter, r *http.Request) *Error {
 	v := r.PostFormValue("xss")
-	return s.render(w, r, s.templates.demoXSS, v)
+	return s.render(w, r, s.templates.demoXSS, v, nil)
 }

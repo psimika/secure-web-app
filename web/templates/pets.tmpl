@@ -1,15 +1,7 @@
-{{define "content"}}
-  <div class="container">
-    <div class="row">
-      <div class="col">
-        {{block "searchform" .}}{{end}}
-      </div>
-    </div>
-    <div class="row">
+{{define "pets"}}
       {{range .data}}
         <div class="col">
-          <div class="card" style="width: 20rem;">
-            <div class="card-header">Featured</div>
+          <div class="card my-3" style="width: 20rem;">
             <img class="card-img-top" src="/photos/{{.PhotoID}}" alt="Photo of pet named {{.Name}}.">
             <div class="card-body">
               <h4 class="card-title">{{.Name}}</h4>
@@ -27,6 +19,4 @@
           </div>
         </div>
       {{end}}
-    </div>
-  </div>
 {{end}}

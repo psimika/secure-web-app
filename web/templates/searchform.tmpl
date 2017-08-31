@@ -4,9 +4,9 @@
           <div class="card-body">
             <form action="/search" method="GET" class="form-inline">
               <label for="place" class="sr-only">Location</label>
-              <select id="place" class="form-control mb-2 mr-sm-2 mb-sm-0 {{if .data.PlaceErr}}is-invalid{{end}}" name="place">
+              <select id="place" class="form-control mb-2 mr-sm-2 mb-sm-0 {{if .form.PlaceErr}}is-invalid{{end}}" name="place">
                 <option value="" selected disabled hidden>Choose location</option>
-                {{$place:=.data.Place}}
+                {{$place:=.form.Place}}
                 {{range .groups}}
                   <optgroup label="{{.Name}}">
                     {{range .Places}}
@@ -16,51 +16,51 @@
                 {{end}}
               </select>
               <div class="invalid-feedback">
-                {{.data.PlaceErr}}
+                {{.form.PlaceErr}}
               </div>
 
               <label for="type" class="sr-only">Type</label>
-              <select id="type" class="form-control mb-2 mr-sm-2 mb-sm-0 {{if .data.TypeErr}}is-invalid{{end}}" name="type">
+              <select id="type" class="form-control mb-2 mr-sm-2 mb-sm-0 {{if .form.TypeErr}}is-invalid{{end}}" name="type">
                 <option value="">Any Type</option>
-                <option value="1" {{if eq .data.Type "1"}}selected{{end}}>Cat</option>
-                <option value="2" {{if eq .data.Type "2"}}selected{{end}}>Dog</option>
+                <option value="1" {{if eq .form.Type "1"}}selected{{end}}>Cat</option>
+                <option value="2" {{if eq .form.Type "2"}}selected{{end}}>Dog</option>
               </select>
               <div class="invalid-feedback">
-                {{.data.TypeErr}}
+                {{.form.TypeErr}}
               </div>
 
               <label for="age" class="sr-only">Age</label>
-              <select id="age" class="form-control mb-2 mr-sm-2 mb-sm-0 {{if .data.AgeErr}}is-invalid{{end}}" name="age">
+              <select id="age" class="form-control mb-2 mr-sm-2 mb-sm-0 {{if .form.AgeErr}}is-invalid{{end}}" name="age">
                 <option value="">Any Age</option>
-                <option value="1" {{if eq .data.Age "1"}}selected{{end}}>Baby</option>
-                <option value="2" {{if eq .data.Age "2"}}selected{{end}}>Young</option>
-                <option value="3" {{if eq .data.Age "3"}}selected{{end}}>Adult</option>
-                <option value="4" {{if eq .data.Age "4"}}selected{{end}}>Senior</option>
+                <option value="1" {{if eq .form.Age "1"}}selected{{end}}>Baby</option>
+                <option value="2" {{if eq .form.Age "2"}}selected{{end}}>Young</option>
+                <option value="3" {{if eq .form.Age "3"}}selected{{end}}>Adult</option>
+                <option value="4" {{if eq .form.Age "4"}}selected{{end}}>Senior</option>
               </select>
               <div class="invalid-feedback">
-                {{.data.AgeErr}}
+                {{.form.AgeErr}}
               </div>
 
               <label for="size" class="sr-only">Size</label>
-              <select id="size" class="form-control mb-2 mr-sm-2 mb-sm-0 {{if .data.SizeErr}}is-invalid{{end}}" name="size">
+              <select id="size" class="form-control mb-2 mr-sm-2 mb-sm-0 {{if .form.SizeErr}}is-invalid{{end}}" name="size">
                 <option value="">Any Size</option>
-                <option value="1" {{if eq .data.Size "1"}}selected{{end}}>Small</option>
-                <option value="2" {{if eq .data.Size "2"}}selected{{end}}>Medium</option>
-                <option value="3" {{if eq .data.Size "3"}}selected{{end}}>Large</option>
-                <option value="4" {{if eq .data.Size "4"}}selected{{end}}>Huge</option>
+                <option value="1" {{if eq .form.Size "1"}}selected{{end}}>Small</option>
+                <option value="2" {{if eq .form.Size "2"}}selected{{end}}>Medium</option>
+                <option value="3" {{if eq .form.Size "3"}}selected{{end}}>Large</option>
+                <option value="4" {{if eq .form.Size "4"}}selected{{end}}>Huge</option>
               </select>
               <div class="invalid-feedback">
-                {{.data.SizeErr}}
+                {{.form.SizeErr}}
               </div>
 
               <label for="gender" class="sr-only">Gender</label>
-              <select id="gender" class="form-control mb-2 mr-sm-2 mb-sm-0 {{if .data.GenderErr}}is-invalid{{end}}" name="gender">
+              <select id="gender" class="form-control mb-2 mr-sm-2 mb-sm-0 {{if .form.GenderErr}}is-invalid{{end}}" name="gender">
                 <option value="">Any Gender</option>
-                <option value="1" {{if eq .data.Gender "1"}}selected{{end}}>Male</option>
-                <option value="2" {{if eq .data.Gender "2"}}selected{{end}}>Female</option>
+                <option value="1" {{if eq .form.Gender "1"}}selected{{end}}>Male</option>
+                <option value="2" {{if eq .form.Gender "2"}}selected{{end}}>Female</option>
               </select>
               <div class="invalid-feedback">
-                {{.data.GenderErr}}
+                {{.form.GenderErr}}
               </div>
               <button type="submit" class="btn btn-outline-success">Search</button>
             </form>

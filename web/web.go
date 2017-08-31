@@ -180,7 +180,7 @@ func newGitHubOAuthConfig(clientID, clientSecret string) *oauth2.Config {
 }
 
 func parseTemplates(dir string) (*templates, error) {
-	homeTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "navbar.tmpl"), filepath.Join(dir, "searchform.tmpl"), filepath.Join(dir, "home.tmpl"))
+	homeTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "navbar.tmpl"), filepath.Join(dir, "searchform.tmpl"), filepath.Join(dir, "home.tmpl"), filepath.Join(dir, "pets.tmpl"))
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +196,7 @@ func parseTemplates(dir string) (*templates, error) {
 	if err != nil {
 		return nil, err
 	}
-	showPetsTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "navbar.tmpl"), filepath.Join(dir, "showpets.tmpl"))
+	showPetsTmpl, err := template.ParseFiles(filepath.Join(dir, "base.tmpl"), filepath.Join(dir, "navbar.tmpl"), filepath.Join(dir, "showpets.tmpl"), filepath.Join(dir, "pets.tmpl"))
 	if err != nil {
 		return nil, err
 	}
@@ -234,11 +234,15 @@ func (s *server) serveHome(w http.ResponseWriter, r *http.Request) *Error {
 		http.ServeFile(w, r, fname)
 		return nil
 	}
+	pets, err := s.store.GetFeaturedPets()
+	if err != nil {
+		return E(err, "Failed to get featured pets", http.StatusInternalServerError)
+	}
 
-	return s.render(w, r, s.templates.home, searchForm{})
+	return s.render(w, r, s.templates.home, pets, searchForm{})
 }
 
-func (s *server) render(w http.ResponseWriter, r *http.Request, tmpl *tmpl, data interface{}) *Error {
+func (s *server) render(w http.ResponseWriter, r *http.Request, tmpl *tmpl, data interface{}, form interface{}) *Error {
 	m := map[string]interface{}{
 		csrf.TemplateTag: csrf.TemplateField(r),
 		"nav":            tmpl.nav,
@@ -247,6 +251,9 @@ func (s *server) render(w http.ResponseWriter, r *http.Request, tmpl *tmpl, data
 
 	if data != nil {
 		m["data"] = data
+	}
+	if form != nil {
+		m["form"] = form
 	}
 
 	user, _ := fromContextGetUser(r.Context())
@@ -301,7 +308,7 @@ func (s *server) serveAddPet(w http.ResponseWriter, r *http.Request) *Error {
 		return E(nil, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 	}
 
-	return s.render(w, r, s.templates.addPet, addPetForm{})
+	return s.render(w, r, s.templates.addPet, nil, addPetForm{})
 }
 
 func (s *server) handleAddPet(w http.ResponseWriter, r *http.Request) *Error {
@@ -320,7 +327,7 @@ func (s *server) handleAddPet(w http.ResponseWriter, r *http.Request) *Error {
 		return E(err, "error inspecting add pet form", http.StatusInternalServerError)
 	}
 	if form.Invalid {
-		return s.render(w, r, s.templates.addPet, form)
+		return s.render(w, r, s.templates.addPet, nil, form)
 	}
 
 	photo, err := s.handlePetPhoto(w, r)
@@ -698,7 +705,7 @@ func (s *server) handleSearch(w http.ResponseWriter, r *http.Request) *Error {
 	}
 
 	if form.Invalid {
-		return s.render(w, r, s.templates.home, form)
+		return s.render(w, r, s.templates.home, nil, form)
 	}
 
 	pets, err := s.store.SearchPets(search)
@@ -706,7 +713,7 @@ func (s *server) handleSearch(w http.ResponseWriter, r *http.Request) *Error {
 		return E(err, "internal server error", http.StatusInternalServerError)
 	}
 
-	return s.render(w, r, s.templates.showPets, pets)
+	return s.render(w, r, s.templates.showPets, pets, nil)
 }
 
 func (s *server) servePets(w http.ResponseWriter, r *http.Request) *Error {
@@ -714,7 +721,7 @@ func (s *server) servePets(w http.ResponseWriter, r *http.Request) *Error {
 	if err != nil {
 		return E(err, "Error getting all pets", http.StatusInternalServerError)
 	}
-	return s.render(w, r, s.templates.showPets, pets)
+	return s.render(w, r, s.templates.showPets, pets, nil)
 }
 
 func (s *server) servePhoto(w http.ResponseWriter, r *http.Request) *Error {
