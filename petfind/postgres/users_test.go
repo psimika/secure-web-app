@@ -157,3 +157,63 @@ func TestPutGithubUser_emptyName(t *testing.T) {
 		t.Errorf("PutGithubUser with empty name -> user.Name=%q, expected %q", got, want)
 	}
 }
+func TestPutLinkedinbUser(t *testing.T) {
+	s := setup(t)
+	defer teardown(t, s)
+
+	// We Put the LinkedIn user for the first time. The user does not exist so we
+	// expect Put to create the user.
+	llu := &petfind.LinkedinUser{
+		ID:        "JANEDOE",
+		FirstName: "Jane",
+		LastName:  "Doe",
+	}
+	got, err := s.PutLinkedinUser(llu)
+	if err != nil {
+		t.Fatal("PutLinkedinUser for non existent user returned err:", err)
+	}
+
+	// Save created time to check it was the same when we Put for a second time
+	// below.
+	created := got.Created
+	// Ignore time values.
+	got.Created = time.Time{}
+	got.Updated = time.Time{}
+
+	want := &petfind.User{
+		ID:         1, // A newly created user should get ID 1 from Postgres.
+		LinkedinID: "JANEDOE",
+		Name:       "Jane Doe",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("PutLinkedinUser first run \nhave: %#v\nwant: %#v", got, want)
+	}
+
+	// Attempt to Put again the github User. The LinkedIn user should have been
+	// already been created from the previous run and we now expect the values
+	// to be updated.
+	llu = &petfind.LinkedinUser{
+		ID:        "JANEDOE",
+		FirstName: "Michaella", // changed
+		LastName:  "Neirou",    // changed
+	}
+	got, err = s.PutLinkedinUser(llu)
+	if err != nil {
+		t.Fatal("PutLinkedinUser for existing user returned err:", err)
+	}
+
+	// Ignore updated.
+	got.Updated = time.Time{}
+
+	want = &petfind.User{
+		ID:         1, // ID stays the same as we are doing an update.
+		LinkedinID: "JANEDOE",
+		Name:       "Michaella Neirou",
+		Created:    created,
+	}
+	// This time we expect the values to be updated but the created time should
+	// be the same as the first run.
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("PutLinkedinUser second run \nhave: %#v\nwant: %#v", got, want)
+	}
+}

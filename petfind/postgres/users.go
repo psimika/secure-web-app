@@ -159,7 +159,7 @@ func (db *store) PutLinkedinUser(llu *petfind.LinkedinUser) (u *petfind.User, er
 	UPDATE users SET
 	  name = $2,
 	  updated = now()
-	WHERE github_id = $1
+	WHERE linkedin_id = $1
 	RETURNING id, github_id, linkedin_id, login, name, email, created, updated
 	`
 		userInsertStmt = `
@@ -197,6 +197,7 @@ func (db *store) PutLinkedinUser(llu *petfind.LinkedinUser) (u *petfind.User, er
 	if err != nil {
 		return nil, err
 	}
+
 	return u, nil
 }
 

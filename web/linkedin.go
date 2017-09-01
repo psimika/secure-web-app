@@ -124,8 +124,7 @@ func (s *server) handleLoginLinkedInCallback(w http.ResponseWriter, r *http.Requ
 }
 
 func getLinkedinUser(client *http.Client, accessToken string) (*petfind.LinkedinUser, error) {
-	fmt.Println("accessToken:", accessToken)
-	resp, err := client.Get("https://api.linkedin.com/v1/people/~?format=json&oauth2_access_token=" + accessToken)
+	resp, err := client.Get("https://api.linkedin.com/v1/people/~?format=json")
 
 	if err != nil {
 		return nil, err

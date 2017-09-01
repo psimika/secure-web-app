@@ -31,10 +31,10 @@ func (db *store) MakeSchema() error {
 	const users = `CREATE TABLE IF NOT EXISTS users (
 		id bigserial PRIMARY KEY,
 		github_id bigint DEFAULT 0,
-		linkedin_id varchar(100) NOT NULL,
+		linkedin_id varchar(100) NOT NULL DEFAULT '',
 		name varchar(70),
-		login varchar(70),
-		email varchar(70),
+		login varchar(70) NOT NULL DEFAULT '',
+		email varchar(70) NOT NULL DEFAULT '',
 		created timestamptz,
 		updated timestamptz
 	)`
