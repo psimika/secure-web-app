@@ -498,7 +498,10 @@ func (s *server) postFormPet(r *http.Request) (*petfind.Pet, addPetForm, error) 
 		return nil, form, fmt.Errorf("error getting form file for photo validation: %v", err)
 	}
 
-	p := &petfind.Pet{Name: name, Age: age, Size: size, Type: t, Gender: gender, Notes: notes, PlaceID: place.ID}
+	p := &petfind.Pet{Name: name, Age: age, Size: size, Type: t, Gender: gender, Notes: notes}
+	if place != nil {
+		p.PlaceID = place.ID
+	}
 	return p, form, nil
 }
 
