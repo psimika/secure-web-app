@@ -30,7 +30,8 @@ func (db *store) MakeSchema() error {
 	// users
 	const users = `CREATE TABLE IF NOT EXISTS users (
 		id bigserial PRIMARY KEY,
-		github_id bigint,
+		github_id bigint default 0,
+		facebook_id bigint default 0,
 		name varchar(70),
 		login varchar(70),
 		email varchar(70),

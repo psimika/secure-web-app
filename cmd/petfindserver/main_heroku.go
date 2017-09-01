@@ -52,6 +52,9 @@ func main() {
 		photosPath       = getenvString("/app/photos", "PHOTOS_PATH")
 		githubID         = getenvString("", "GITHUB_ID")
 		githubSecret     = getenvString("", "GITHUB_SECRET")
+		facebookID       = getenvString("", "FACEBOOK_ID")
+		facebookSecret   = getenvString("", "FACEBOOK_SECRET")
+		facebookURL      = getenvString("", "FACEBOOK_URL")
 		sessionTTL       = getenvInt(1200, "SESSION_TTL")
 		sessionMaxTTL    = getenvInt(3600, "SESSION_MAX_TTL")
 		redisURL         = getenvString("", "REDIS_URL")
@@ -122,6 +125,7 @@ func main() {
 		tmplPath,
 		photos,
 		web.NewGitHubOAuthConfig(githubID, githubSecret),
+		web.NewFacebookOAuthConfig(facebookID, facebookSecret, facebookURL),
 	)
 	if err != nil {
 		log.Println("NewServer failed:", err)

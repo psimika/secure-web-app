@@ -328,3 +328,114 @@ func getGithubUser(client *http.Client) (*petfind.GithubUser, error) {
 	}
 	return user, nil
 }
+
+// handleLoginFacebook sends an oauth request to login with Facebook (Caserta
+// 2015).
+//
+// http://pierrecaserta.com/go-oauth-facebook-github-twitter-google-plus/
+func (s *server) handleLoginFacebook(w http.ResponseWriter, r *http.Request) *Error {
+	// Create oauth state token.
+	key := securecookie.GenerateRandomKey(oauthStateTokenSize)
+	if key == nil {
+		return E(nil, "error generating random oauth state token", http.StatusInternalServerError)
+	}
+	state := base64.URLEncoding.EncodeToString(key)
+
+	session, err := s.sessions.Get(r, sessionName)
+	if err != nil {
+		return E(err, "error getting session", http.StatusInternalServerError)
+	}
+	session.Values["state"] = state
+	session.Values["created"] = time.Now().UTC().Unix()
+	session.Values["userAgent"] = r.UserAgent()
+	if err := session.Save(r, w); err != nil {
+		return E(err, "error saving session", http.StatusInternalServerError)
+	}
+
+	url := s.facebook.AuthCodeURL(state, oauth2.AccessTypeOnline)
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+	return nil
+}
+
+// handleLoginFacebookCallback receives the callback request returned by
+// Facebook after the user has given consent to access their information
+// (Caserta 2015):
+//
+// http://pierrecaserta.com/go-oauth-facebook-github-twitter-google-plus/
+func (s *server) handleLoginFacebookCallback(w http.ResponseWriter, r *http.Request) *Error {
+	session, err := s.sessions.Get(r, sessionName)
+	if err != nil {
+		return E(err, "error getting session", http.StatusInternalServerError)
+	}
+	val, ok := session.Values["state"]
+	if !ok {
+		return E(nil, "no state in session", http.StatusForbidden)
+	}
+	oauthState, ok := val.(string)
+	if !ok {
+		return E(nil, "unexpected state type", http.StatusForbidden)
+	}
+
+	// Check that the state token returned from GitHub is the same as the one
+	// we generated.
+	state := r.FormValue("state")
+	// Constant time compare to mitigate timing attacks.
+	if subtle.ConstantTimeCompare([]byte(state), []byte(oauthState)) != 1 {
+		// TODO(psimika): Redirect instead of returning an error?
+		e := fmt.Errorf("invalid oauth state, expected %q, got %q", oauthState, state)
+		return E(e, "invalid oauth state", http.StatusForbidden)
+	}
+
+	// Exchange authorization code for a Facebook API token.
+	code := r.FormValue("code")
+	token, err := s.facebook.Exchange(context.Background(), code)
+	if err != nil {
+		return E(err, "error exchanging authorization code for token", http.StatusInternalServerError)
+	}
+
+	// Create an HTTP client that uses the Facebook API token.
+	c := s.facebook.Client(context.Background(), token)
+
+	// Use the client to get the consented user's info from the GitHub API.
+	facebookUser, err := getFacebookUser(c, token.AccessToken)
+	if err != nil {
+		return E(err, "could not get user from Facebook API", http.StatusInternalServerError)
+	}
+
+	user, err := s.store.PutFacebookUser(facebookUser)
+	if err != nil {
+		return E(err, "error storing github user", http.StatusInternalServerError)
+	}
+
+	fmt.Println(facebookUser)
+	fmt.Println("success!")
+
+	session.Values["userID"] = user.ID
+	delete(session.Values, "state")
+	if err := session.Save(r, w); err != nil {
+		return E(err, "error saving session", http.StatusInternalServerError)
+	}
+
+	redirectPath, err := fromSessionGetRedirectPath(session)
+	if err != nil {
+		log.Println("no redirectPath in session")
+		http.Redirect(w, r, "/", http.StatusFound)
+		return nil
+	}
+	http.Redirect(w, r, redirectPath, http.StatusFound)
+
+	return nil
+}
+
+func getFacebookUser(client *http.Client, accessToken string) (*petfind.FacebookUser, error) {
+	resp, err := client.Get("https://graph.facebook.com/me?access_token=" + accessToken)
+	if err != nil {
+		return nil, err
+	}
+
+	user := new(petfind.FacebookUser)
+	if err := json.NewDecoder(resp.Body).Decode(user); err != nil {
+		return nil, fmt.Errorf("could not decode facebook user: %v", err)
+	}
+	return user, nil
+}

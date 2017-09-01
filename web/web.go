@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/facebook"
 	"golang.org/x/oauth2/github"
 
 	gorillactx "github.com/gorilla/context"
@@ -60,6 +61,7 @@ type server struct {
 	store         petfind.Store
 	templates     *templates
 	github        *oauth2.Config
+	facebook      *oauth2.Config
 	sessions      sessions.Store
 	sessionTTL    int
 	sessionMaxTTL int
@@ -99,6 +101,7 @@ func NewServer(
 	templatePath string,
 	photoStore petfind.PhotoStore,
 	githubOAuth *oauth2.Config,
+	facebookOAuth *oauth2.Config,
 ) (http.Handler, error) {
 	t, err := parseTemplates(filepath.Join(templatePath, "templates"))
 	if err != nil {
@@ -114,6 +117,7 @@ func NewServer(
 		store:         store,
 		templates:     t,
 		github:        githubOAuth,
+		facebook:      facebookOAuth,
 		sessions:      sessionStore,
 		sessionTTL:    sessionTTL,
 		sessionMaxTTL: sessionMaxTTL,
@@ -130,6 +134,8 @@ func NewServer(
 	s.mux.Handle("/login", handler(s.serveLogin))
 	s.mux.Handle("/login/github", handler(s.handleLoginGitHub))
 	s.mux.Handle("/login/github/cb", handler(s.handleLoginGitHubCallback))
+	s.mux.Handle("/login/facebook", handler(s.handleLoginFacebook))
+	s.mux.Handle("/login/facebook/cb", handler(s.handleLoginFacebookCallback))
 	s.mux.Handle("/logout", s.auth(s.handleLogout))
 	s.mux.Handle("/photos/", handler(s.servePhoto))
 	s.mux.Handle("/demo/xss", handler(s.demoXSS))
@@ -178,6 +184,16 @@ func NewGitHubOAuthConfig(clientID, clientSecret string) *oauth2.Config {
 		// https://developer.github.com/apps/building-integrations/setting-up-and-registering-oauth-apps/about-scopes-for-oauth-apps/
 		Scopes:   []string{"user:email"},
 		Endpoint: github.Endpoint,
+	}
+}
+
+func NewFacebookOAuthConfig(clientID, clientSecret, redirectURL string) *oauth2.Config {
+	return &oauth2.Config{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		RedirectURL:  redirectURL,
+		Scopes:       []string{},
+		Endpoint:     facebook.Endpoint,
 	}
 }
 

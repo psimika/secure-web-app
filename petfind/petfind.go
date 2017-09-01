@@ -115,6 +115,8 @@ type Store interface {
 	GetUser(userID int64) (*User, error)
 	PutGithubUser(*GithubUser) (*User, error)
 	GetUserByGithubID(githubID int64) (*User, error)
+	PutFacebookUser(*FacebookUser) (*User, error)
+	GetUserByFacebookID(facebookID int64) (*User, error)
 
 	AddPhoto(*Photo) error
 	GetPhoto(photoID int64) (*Photo, error)
@@ -145,13 +147,14 @@ type Search struct {
 
 // User holds information about a user that is signed in the application.
 type User struct {
-	ID       int64
-	GithubID int64
-	Login    string
-	Name     string
-	Email    string
-	Created  time.Time
-	Updated  time.Time
+	ID         int64
+	GithubID   int64
+	FacebookID int64
+	Login      string
+	Name       string
+	Email      string
+	Created    time.Time
+	Updated    time.Time
 }
 
 // GithubUser holds the data that we need to retrieve from a user's GitHub
@@ -163,7 +166,9 @@ type GithubUser struct {
 	Email string `json:"email"`
 }
 
-// TODO(psimika): Useful article in case a custom type needs to be stored in
-// the database:
-//
-// https://husobee.github.io/golang/database/2015/06/12/scanner-valuer.html
+// FacebookUser holds the data that we need to retrieve from a user's Facebook
+// account with their permission.
+type FacebookUser struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}

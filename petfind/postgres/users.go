@@ -146,3 +146,82 @@ func (db *store) GetUserByGithubID(userID int64) (*petfind.User, error) {
 	}
 	return u, nil
 }
+
+func (db *store) PutFacebookUser(fbu *petfind.FacebookUser) (u *petfind.User, err error) {
+	const (
+		userUpdateStmt = `
+	UPDATE users SET
+	  name = $2,
+	  updated = now()
+	WHERE facebook_id = $1
+	RETURNING id, github_id, facebook_id, login, name, email, created, updated
+	`
+		userInsertStmt = `
+	INSERT INTO users(facebook_id, name, created, updated)
+	VALUES ($1, $2, $3, $4, $5, now(), now())
+	RETURNING id, github_id, facebook_id, login, name, email, created, updated
+	`
+	)
+
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			if rerr := tx.Rollback(); rerr != nil {
+				err = fmt.Errorf("rollback failed: %v: %v", rerr, err)
+			}
+			return
+		}
+		err = tx.Commit()
+	}()
+
+	u = new(petfind.User)
+	err = tx.QueryRow(userUpdateStmt, fbu.ID, fbu.Name).
+		Scan(&u.ID, &u.GithubID, &u.FacebookID, &u.Login, &u.Name, &u.Email, &u.Created, &u.Updated)
+	if err == sql.ErrNoRows {
+		err = tx.QueryRow(userInsertStmt, fbu.ID, fbu.Name).
+			Scan(&u.ID, &u.GithubID, &u.FacebookID, &u.Login, &u.Name, &u.Email, &u.Created, &u.Updated)
+		if err != nil {
+			return nil, err
+		}
+		return u, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
+func (db *store) GetUserByFacebookID(facebookID int64) (*petfind.User, error) {
+	const userGetByFacebookIDQuery = `
+	SELECT
+	  id,
+	  github_id,
+	  facebook_id,
+	  login,
+	  name,
+	  email,
+	  created
+	FROM users
+	WHERE facebook_id = $1
+	`
+	u := new(petfind.User)
+	err := db.QueryRow(userGetByFacebookIDQuery, facebookID).Scan(
+		&u.ID,
+		&u.GithubID,
+		&u.FacebookID,
+		&u.Login,
+		&u.Name,
+		&u.Email,
+		&u.Created,
+	)
+	if err == sql.ErrNoRows {
+		return nil, petfind.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}
