@@ -1,3 +1,6 @@
 cover.out
 .env.local
 photos
+petfind.service_production
+cert.pem
+key.pem
