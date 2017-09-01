@@ -90,6 +90,7 @@ type Pet struct {
 	Gender  PetGender
 	Created time.Time
 	Updated time.Time
+	Contact string
 	Notes   string
 	PhotoID int64
 	OwnerID int64

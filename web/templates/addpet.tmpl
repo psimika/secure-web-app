@@ -9,7 +9,7 @@
             {{ .csrfField }}
             <div class="form-group">
               <label for="name">Name</label>
-              <input type="text" class="form-control {{if .form.NameErr}}is-invalid{{end}}" id="name" placeholder="Enter pet's name" name="name" value="{{.form.Name}}">
+              <input type="text" class="form-control {{if .form.NameErr}}is-invalid{{end}}" id="name" placeholder="Enter pet's name." name="name" value="{{.form.Name}}">
               <div class="invalid-feedback">
                 {{.form.NameErr}}
               </div>
@@ -30,6 +30,15 @@
               </select>
               <div class="invalid-feedback">
                 {{.form.PlaceErr}}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="contact">Contact</label>
+              <input type="text" class="form-control {{if .form.ContactErr}}is-invalid{{end}}" id="contact" placeholder="Enter a phone number." name="contact" value="{{.form.Contact}}" aria-describedby="contactHelp">
+              <small id="contactHelp" class="form-text text-muted">People interested in this pet will contact this number.</small>
+              <div class="invalid-feedback">
+                {{.form.ContactErr}}
               </div>
             </div>
 

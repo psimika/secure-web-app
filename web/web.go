@@ -347,7 +347,6 @@ func (s *server) serveAddPet(w http.ResponseWriter, r *http.Request) *Error {
 
 func (s *server) handleAddPet(w http.ResponseWriter, r *http.Request) *Error {
 	if r.Method != "POST" {
-		fmt.Println("post")
 		return E(nil, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	}
 
@@ -371,7 +370,6 @@ func (s *server) handleAddPet(w http.ResponseWriter, r *http.Request) *Error {
 
 	pet.PhotoID = photo.ID
 	pet.OwnerID = user.ID
-	pet.PlaceID = user.ID
 	if err := s.store.AddPet(pet); err != nil {
 		return E(err, "Error adding pet", http.StatusInternalServerError)
 	}
@@ -403,21 +401,23 @@ func (s *server) handlePetPhoto(w http.ResponseWriter, r *http.Request) (*petfin
 }
 
 type addPetForm struct {
-	Invalid   bool
-	Name      string
-	NameErr   string
-	Place     string
-	PlaceErr  string
-	Age       string
-	AgeErr    string
-	Size      string
-	SizeErr   string
-	Type      string
-	TypeErr   string
-	Gender    string
-	GenderErr string
-	Notes     string
-	NotesErr  string
+	Invalid    bool
+	Name       string
+	NameErr    string
+	Place      string
+	PlaceErr   string
+	Contact    string
+	ContactErr string
+	Age        string
+	AgeErr     string
+	Size       string
+	SizeErr    string
+	Type       string
+	TypeErr    string
+	Gender     string
+	GenderErr  string
+	Notes      string
+	NotesErr   string
 
 	PhotoErr string
 }
@@ -442,6 +442,13 @@ func (s *server) postFormPet(r *http.Request) (*petfind.Pet, addPetForm, error) 
 	if !valid {
 		form.Invalid = true
 		form.PlaceErr = reason.String()
+	}
+
+	contact := r.PostFormValue("contact")
+	form.Contact = contact
+	if valid, reason := validContact(contact); !valid {
+		form.Invalid = true
+		form.ContactErr = reason.String()
 	}
 
 	ageStr := r.PostFormValue("age")
@@ -500,7 +507,7 @@ func (s *server) postFormPet(r *http.Request) (*petfind.Pet, addPetForm, error) 
 		return nil, form, fmt.Errorf("error getting form file for photo validation: %v", err)
 	}
 
-	p := &petfind.Pet{Name: name, Age: age, Size: size, Type: t, Gender: gender, Notes: notes}
+	p := &petfind.Pet{Name: name, Age: age, Size: size, Type: t, Gender: gender, Notes: notes, Contact: contact}
 	if place != nil {
 		p.PlaceID = place.ID
 	}
@@ -548,6 +555,21 @@ func validName(name string) (bool, invalidReason) {
 	}
 	if m := nameRegex.MatchString(name); !m {
 		return false, "Pet's name can only contain letters."
+	}
+	return true, ""
+}
+
+var contactRegex = regexp.MustCompile(`^[0-9]+$`)
+
+func validContact(contact string) (bool, invalidReason) {
+	if contact == "" {
+		return false, "Contact is required."
+	}
+	if len(contact) > 50 {
+		return false, "Contact cannot be longer than 50 digits."
+	}
+	if m := contactRegex.MatchString(contact); !m {
+		return false, "Contact can only contain digits."
 	}
 	return true, ""
 }

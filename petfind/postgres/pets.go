@@ -22,8 +22,8 @@ func (db *store) CountPets() (int64, error) {
 
 func (db *store) AddPet(p *petfind.Pet) error {
 	const petInsertStmt = `
-	INSERT INTO pets(name, age, size, type, gender, notes, owner_id, photo_id, place_id, created, updated)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now(), now())
+	INSERT INTO pets(name, age, size, type, gender, contact, notes, owner_id, photo_id, place_id, created, updated)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now(), now())
 	RETURNING id, created, updated
 	`
 	stmt, err := db.Prepare(petInsertStmt)
@@ -36,7 +36,7 @@ func (db *store) AddPet(p *petfind.Pet) error {
 			return
 		}
 	}()
-	err = stmt.QueryRow(p.Name, p.Age, p.Size, p.Type, p.Gender, p.Notes, p.OwnerID, p.PhotoID, p.PlaceID).Scan(&p.ID, &p.Created, &p.Updated)
+	err = stmt.QueryRow(p.Name, p.Age, p.Size, p.Type, p.Gender, p.Contact, p.Notes, p.OwnerID, p.PhotoID, p.PlaceID).Scan(&p.ID, &p.Created, &p.Updated)
 	if err != nil {
 		return err
 	}
@@ -61,6 +61,7 @@ func (db *store) GetPet(petID int64) (*petfind.Pet, error) {
 		&p.Type,
 		&p.Size,
 		&p.Gender,
+		&p.Contact,
 		&p.Notes,
 		&p.Created,
 		&p.Updated,
@@ -121,6 +122,7 @@ func (db *store) GetFeaturedPets() ([]*petfind.Pet, error) {
 			&p.Type,
 			&p.Size,
 			&p.Gender,
+			&p.Contact,
 			&p.Notes,
 			&p.Created,
 			&p.Updated,
@@ -157,6 +159,7 @@ func (db *store) GetAllPets() ([]petfind.Pet, error) {
 	  p.type,
 	  p.size,
 	  p.gender,
+	  p.contact,
 	  p.notes,
 	  p.created,
 	  p.updated,
@@ -201,6 +204,7 @@ func (db *store) GetAllPets() ([]petfind.Pet, error) {
 			&p.Type,
 			&p.Size,
 			&p.Gender,
+			&p.Contact,
 			&p.Notes,
 			&p.Created,
 			&p.Updated,
@@ -416,6 +420,7 @@ func (db *store) SearchPets(s petfind.Search) ([]*petfind.Pet, error) {
 			&p.Type,
 			&p.Size,
 			&p.Gender,
+			&p.Contact,
 			&p.Notes,
 			&p.Created,
 			&p.Updated,

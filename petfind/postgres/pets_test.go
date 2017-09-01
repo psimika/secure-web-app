@@ -44,6 +44,8 @@ func TestAddPet(t *testing.T) {
 		OwnerID: owner.ID,
 		PhotoID: photo.ID,
 		PlaceID: place.ID,
+		Notes:   "notes",
+		Contact: "123",
 	}
 	if err := s.AddPet(p); err != nil {
 		t.Fatalf("AddPet failed: %v", err)
@@ -71,6 +73,8 @@ func TestAddPet(t *testing.T) {
 			PlaceID: 1,
 			Owner:   owner,
 			Place:   place,
+			Notes:   "notes",
+			Contact: "123",
 		},
 	}
 	if got := pets; !reflect.DeepEqual(got, want) {

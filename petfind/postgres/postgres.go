@@ -82,6 +82,7 @@ func (db *store) MakeSchema() error {
 		type integer,
 		size integer,
 		gender integer,
+		contact varchar(50),
 		notes text,
 		created timestamptz,
 		updated timestamptz,
