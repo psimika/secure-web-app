@@ -49,6 +49,7 @@ func (fn handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if e := fn(w, r); e != nil { // e is *web.Error, not error.
 		log.Println(e)
 		http.Error(w, e.Message, e.Code)
+		return
 	}
 }
 
@@ -166,6 +167,7 @@ func prepareFavicons(assetsPath string) map[string]string {
 	}
 	return favicons
 }
+
 func NewGitHubOAuthConfig(clientID, clientSecret string) *oauth2.Config {
 	return &oauth2.Config{
 		ClientID:     clientID,
@@ -550,12 +552,17 @@ func validName(name string) (bool, invalidReason) {
 	return true, ""
 }
 
+var notesRegex = regexp.MustCompile(`^[\w\s\.\?\!\,\@\#\%\'\:]+$`)
+
 func validNotes(notes string) (bool, invalidReason) {
 	if notes == "" {
 		return false, "Pet's notes cannot be empty."
 	}
 	if len(notes) > 1000 {
 		return false, "Pet's notes cannot be longer than 1000 characters."
+	}
+	if m := notesRegex.MatchString(notes); !m {
+		return false, "Pet's notes can only contain letters, numbers, whitespace and the symbols \".@'#:%,_!?\"."
 	}
 	return true, ""
 }
