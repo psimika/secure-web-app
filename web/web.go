@@ -528,20 +528,22 @@ func (s *server) validPlace(placeKey string) (*petfind.Place, bool, invalidReaso
 	if placeKey == "" {
 		return nil, false, "Pet's location is required."
 	}
-	found := false
-	var place *petfind.Place
-	for _, g := range s.placeGroups {
-		for _, p := range g.Places {
-			if p.Key == placeKey {
-				found = true
-				place = &p
-			}
-		}
-	}
-	if !found {
+	place := s.findPlaceByKey(placeKey)
+	if place == nil {
 		return nil, false, "Unrecognized location."
 	}
 	return place, true, ""
+}
+
+func (s *server) findPlaceByKey(placeKey string) *petfind.Place {
+	for _, g := range s.placeGroups {
+		for _, p := range g.Places {
+			if p.Key == placeKey {
+				return &p
+			}
+		}
+	}
+	return nil
 }
 
 var nameRegex = regexp.MustCompile(`^[a-zA-Z]+$`)
