@@ -60,6 +60,7 @@ type server struct {
 	store         petfind.Store
 	templates     *templates
 	github        *oauth2.Config
+	linkedin      *oauth2.Config
 	sessions      sessions.Store
 	sessionTTL    int
 	sessionMaxTTL int
@@ -99,6 +100,7 @@ func NewServer(
 	templatePath string,
 	photoStore petfind.PhotoStore,
 	githubOAuth *oauth2.Config,
+	linkedinOAuth *oauth2.Config,
 ) (http.Handler, error) {
 	t, err := parseTemplates(filepath.Join(templatePath, "templates"))
 	if err != nil {
@@ -114,6 +116,7 @@ func NewServer(
 		store:         store,
 		templates:     t,
 		github:        githubOAuth,
+		linkedin:      linkedinOAuth,
 		sessions:      sessionStore,
 		sessionTTL:    sessionTTL,
 		sessionMaxTTL: sessionMaxTTL,
@@ -130,6 +133,8 @@ func NewServer(
 	s.mux.Handle("/login", handler(s.serveLogin))
 	s.mux.Handle("/login/github", handler(s.handleLoginGitHub))
 	s.mux.Handle("/login/github/cb", handler(s.handleLoginGitHubCallback))
+	s.mux.Handle("/login/linkedin", handler(s.handleLoginLinkedIn))
+	s.mux.Handle("/login/linkedin/cb", handler(s.handleLoginLinkedInCallback))
 	s.mux.Handle("/logout", s.auth(s.handleLogout))
 	s.mux.Handle("/photos/", handler(s.servePhoto))
 	s.mux.Handle("/demo/xss", handler(s.demoXSS))

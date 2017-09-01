@@ -9,8 +9,8 @@ import (
 
 func (db *store) CreateUser(u *petfind.User) error {
 	const userInsertStmt = `
-	INSERT INTO users(github_id, login, name, email, created, updated)
-	VALUES ($1, $2, $3, $4, now(), now())
+	INSERT INTO users(github_id, linkedin_id, login, name, email, created, updated)
+	VALUES ($1, $2, $3, $4, $5, now(), now())
 	RETURNING id, created, updated
 	`
 	stmt, err := db.Prepare(userInsertStmt)
@@ -23,7 +23,7 @@ func (db *store) CreateUser(u *petfind.User) error {
 			return
 		}
 	}()
-	err = stmt.QueryRow(u.GithubID, u.Login, u.Name, u.Email).Scan(&u.ID, &u.Created, &u.Updated)
+	err = stmt.QueryRow(u.GithubID, u.LinkedinID, u.Login, u.Name, u.Email).Scan(&u.ID, &u.Created, &u.Updated)
 	if err != nil {
 		return err
 	}
@@ -35,6 +35,7 @@ func (db *store) GetUser(userID int64) (*petfind.User, error) {
 	SELECT
 	  id,
 	  github_id,
+	  linkedin_id,
 	  login,
 	  name,
 	  email,
@@ -47,6 +48,7 @@ func (db *store) GetUser(userID int64) (*petfind.User, error) {
 	err := db.QueryRow(userGetQuery, userID).Scan(
 		&u.ID,
 		&u.GithubID,
+		&u.LinkedinID,
 		&u.Login,
 		&u.Name,
 		&u.Email,
@@ -122,6 +124,7 @@ func (db *store) GetUserByGithubID(userID int64) (*petfind.User, error) {
 	SELECT
 	  id,
 	  github_id,
+	  linkedin_id,
 	  login,
 	  name,
 	  email,
@@ -133,6 +136,88 @@ func (db *store) GetUserByGithubID(userID int64) (*petfind.User, error) {
 	err := db.QueryRow(userGetByGithubIDQuery, userID).Scan(
 		&u.ID,
 		&u.GithubID,
+		&u.LinkedinID,
+		&u.Login,
+		&u.Name,
+		&u.Email,
+		&u.Created,
+	)
+	if err == sql.ErrNoRows {
+		return nil, petfind.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
+func (db *store) PutLinkedinUser(llu *petfind.LinkedinUser) (u *petfind.User, err error) {
+	fmt.Printf("llu: %#v\n", llu)
+	lluName := fmt.Sprintf("%s %s", llu.FirstName, llu.LastName)
+	const (
+		userUpdateStmt = `
+	UPDATE users SET
+	  name = $2,
+	  updated = now()
+	WHERE github_id = $1
+	RETURNING id, github_id, linkedin_id, login, name, email, created, updated
+	`
+		userInsertStmt = `
+	INSERT INTO users(linkedin_id, name, created, updated)
+	VALUES ($1, $2, now(), now())
+	RETURNING id, github_id, linkedin_id, login, name, email, created, updated
+	`
+	)
+
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			if rerr := tx.Rollback(); rerr != nil {
+				err = fmt.Errorf("rollback failed: %v: %v", rerr, err)
+			}
+			return
+		}
+		err = tx.Commit()
+	}()
+
+	u = new(petfind.User)
+	err = tx.QueryRow(userUpdateStmt, llu.ID, lluName).
+		Scan(&u.ID, &u.GithubID, &u.LinkedinID, &u.Login, &u.Name, &u.Email, &u.Created, &u.Updated)
+	if err == sql.ErrNoRows {
+		err = tx.QueryRow(userInsertStmt, llu.ID, lluName).
+			Scan(&u.ID, &u.GithubID, &u.LinkedinID, &u.Login, &u.Name, &u.Email, &u.Created, &u.Updated)
+		if err != nil {
+			return nil, err
+		}
+		return u, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
+func (db *store) GetUserByLinkedinID(userID string) (*petfind.User, error) {
+	const userGetByLinkedinIDQuery = `
+	SELECT
+	  id,
+	  github_id,
+	  linkedin_id,
+	  login,
+	  name,
+	  email,
+	  created
+	FROM users
+	WHERE linkedin_id = $1
+	`
+	u := new(petfind.User)
+	err := db.QueryRow(userGetByLinkedinIDQuery, userID).Scan(
+		&u.ID,
+		&u.GithubID,
+		&u.LinkedinID,
 		&u.Login,
 		&u.Name,
 		&u.Email,

@@ -83,6 +83,10 @@
 		{
 			"ImportPath": "golang.org/x/oauth2/internal",
 			"Rev": "b53b38ad8a6435bd399ea76d0fa74f23149cca4e"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2/linkedin",
+			"Rev": "b53b38ad8a6435bd399ea76d0fa74f23149cca4e"
 		}
 	]
 }

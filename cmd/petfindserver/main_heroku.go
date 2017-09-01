@@ -52,6 +52,9 @@ func main() {
 		photosPath       = getenvString("/app/photos", "PHOTOS_PATH")
 		githubID         = getenvString("", "GITHUB_ID")
 		githubSecret     = getenvString("", "GITHUB_SECRET")
+		linkedinID       = getenvString("", "LINKEDIN_ID")
+		linkedinSecret   = getenvString("", "LINKEDIN_SECRET")
+		linkedinURL      = getenvString("", "LINKEDIN_URL")
 		sessionTTL       = getenvInt(1200, "SESSION_TTL")
 		sessionMaxTTL    = getenvInt(3600, "SESSION_MAX_TTL")
 		redisURL         = getenvString("", "REDIS_URL")
@@ -122,6 +125,7 @@ func main() {
 		tmplPath,
 		photos,
 		web.NewGitHubOAuthConfig(githubID, githubSecret),
+		web.NewLinkedInOAuthConfig(linkedinID, linkedinSecret, linkedinURL),
 	)
 	if err != nil {
 		log.Println("NewServer failed:", err)

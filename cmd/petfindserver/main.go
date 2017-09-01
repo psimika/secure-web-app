@@ -37,6 +37,9 @@ func main() {
 		autocertCache    = flag.String("autocertdir", "", "directory to cache the Let's Encrypt certificates")
 		githubID         = flag.String("githubid", "", "GitHub Client ID used for Login with GitHub")
 		githubSecret     = flag.String("githubsecret", "", "GitHub Client Secret used for Login with GitHub")
+		linkedinID       = flag.String("linkedinid", "", "LinkedIn Client ID used for Login with LinkedIn")
+		linkedinSecret   = flag.String("linkedinsecret", "", "LinkedIn Client Secret used for Login with LinkedIn")
+		linkedinURL      = flag.String("linkedinurl", "", "LinkedIn redirect URL used for Login with LinkedIn")
 		cloudinaryKey    = flag.String("cloudinarykey", "", "Cloudinary API Key used to upload photos")
 		cloudinarySecret = flag.String("cloudinarysecret", "", "Cloudinary API Secret used to upload photos")
 		cloudinaryName   = flag.String("cloudinaryname", "", "Cloudinary Cloud Name used to upload photos")
@@ -122,6 +125,7 @@ func main() {
 		*tmplPath,
 		photos,
 		web.NewGitHubOAuthConfig(*githubID, *githubSecret),
+		web.NewLinkedInOAuthConfig(*linkedinID, *linkedinSecret, *linkedinURL),
 	)
 	if err != nil {
 		log.Println("NewServer failed:", err)

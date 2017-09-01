@@ -116,6 +116,8 @@ type Store interface {
 	GetUser(userID int64) (*User, error)
 	PutGithubUser(*GithubUser) (*User, error)
 	GetUserByGithubID(githubID int64) (*User, error)
+	PutLinkedinUser(*LinkedinUser) (*User, error)
+	GetUserByLinkedinID(linkedinID string) (*User, error)
 
 	AddPhoto(*Photo) error
 	GetPhoto(photoID int64) (*Photo, error)
@@ -146,13 +148,14 @@ type Search struct {
 
 // User holds information about a user that is signed in the application.
 type User struct {
-	ID       int64
-	GithubID int64
-	Login    string
-	Name     string
-	Email    string
-	Created  time.Time
-	Updated  time.Time
+	ID         int64
+	GithubID   int64
+	LinkedinID string
+	Login      string
+	Name       string
+	Email      string
+	Created    time.Time
+	Updated    time.Time
 }
 
 // GithubUser holds the data that we need to retrieve from a user's GitHub
@@ -162,6 +165,14 @@ type GithubUser struct {
 	Login string `json:"login"`
 	Name  string `json:"name"`
 	Email string `json:"email"`
+}
+
+// LinkedinUser holds the data that we need to retrieve from a user's LinkedIn
+// account with their permission.
+type LinkedinUser struct {
+	ID        string `json:"id"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
 }
 
 // TODO(psimika): Useful article in case a custom type needs to be stored in
