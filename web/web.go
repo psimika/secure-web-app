@@ -328,11 +328,9 @@ func (s *server) guest(fn handler) handler {
 		if user != nil {
 			// Put user in the context so that the next handler can access it.
 			ctx := newContextWithUser(r.Context(), user)
-			fn(w, r.WithContext(ctx))
-		} else {
-			fn(w, r)
+			return fn(w, r.WithContext(ctx))
 		}
-		return nil
+		return fn(w, r)
 	}
 }
 
