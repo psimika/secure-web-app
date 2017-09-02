@@ -83,7 +83,7 @@ func newDefaultTLSConfig(certFile, keyFile string) (*tls.Config, error) {
 		// Causes servers to use Go's default ciphersuite preferences,
 		// which are tuned to avoid attacks. Does nothing on clients.
 		PreferServerCipherSuites: true,
-		CurvePreferences:         []tls.CurveID{tls.CurveP256, tls.X25519},
+		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256, tls.X25519},
 		MinVersion:               tls.VersionTLS12,
 		Certificates:             []tls.Certificate{cert},
 		CipherSuites: []uint16{
