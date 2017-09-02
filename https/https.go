@@ -63,8 +63,8 @@ func ListenAndServeTLS(addr, certFile, keyFile string, handler http.Handler) err
 func newServer(config *tls.Config, handler http.Handler) *http.Server {
 	return &http.Server{
 		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      10 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      15 * time.Second,
 		IdleTimeout:       60 * time.Second,
 		TLSConfig:         config,
 		Handler:           handler,
