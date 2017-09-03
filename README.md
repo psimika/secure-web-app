@@ -65,6 +65,8 @@ Or when working on a different branch:
 
     git push heroku somebranch:master
 
+Live Demo: https://secure-petfind.herokuapp.com
+
 ### On a Linux server (Ubuntu 16.04 example)
 
 First we connect to the server and we might want to create a new account with
