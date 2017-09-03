@@ -34,6 +34,9 @@ func NewPhotoStore(apiKey, apiSecret, cloudName string) *Store {
 }
 
 func (s *Store) ServePhoto(w io.Writer, photo *petfind.Photo) error {
+	if photo.URL == "" {
+		return petfind.ErrNotFound
+	}
 	resp, err := http.Get(photo.URL)
 	if err != nil {
 		return fmt.Errorf("error fetching cloudinary image: %v", err)

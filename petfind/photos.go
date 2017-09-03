@@ -36,7 +36,11 @@ func NewPhotoStore(uploadPath string) *LocalPhotoStore {
 }
 
 func (s *LocalPhotoStore) ServePhoto(w io.Writer, photo *Photo) error {
-	f, err := os.Open(filepath.Join(s.photosPath, photo.Key))
+	path := filepath.Join(s.photosPath, photo.Key)
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		return ErrNotFound
+	}
+	f, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("error opening photo from disk")
 	}

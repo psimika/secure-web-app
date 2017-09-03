@@ -797,6 +797,9 @@ func (s *server) serveSearch(w http.ResponseWriter, r *http.Request) *Error {
 
 func (s *server) servePhoto(w http.ResponseWriter, r *http.Request) *Error {
 	idStr := r.URL.Path[strings.LastIndex(r.URL.Path, "/")+1:]
+	if idStr == "" {
+		return E(nil, "empty photo id", http.StatusNotFound)
+	}
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		return E(err, "invalid photo id", http.StatusBadRequest)
@@ -811,7 +814,11 @@ func (s *server) servePhoto(w http.ResponseWriter, r *http.Request) *Error {
 	}
 
 	w.Header().Set("Content-Type", photo.ContentType)
-	if err := s.photos.ServePhoto(w, photo); err != nil {
+	err = s.photos.ServePhoto(w, photo)
+	if err == petfind.ErrNotFound {
+		return E(err, "photo was not found", http.StatusNotFound)
+	}
+	if err != nil {
 		return E(err, "error serving photo", http.StatusInternalServerError)
 	}
 	return nil
