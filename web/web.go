@@ -127,7 +127,6 @@ func NewServer(
 	s.mux.Handle("/", s.guest(s.serveHome))
 	s.mux.Handle("/search", handler(s.serveSearch))
 	s.mux.Handle("/search/submit", handler(s.handleSearch))
-	s.mux.Handle("/pets", handler(s.servePets))
 	s.mux.Handle("/pets/add", s.auth(s.serveAddPet))
 	s.mux.Handle("/pets/add/submit", s.auth(s.handleAddPet))
 	s.mux.Handle("/login", handler(s.serveLogin))
@@ -794,14 +793,6 @@ func (s *server) handleSearch(w http.ResponseWriter, r *http.Request) *Error {
 func (s *server) serveSearch(w http.ResponseWriter, r *http.Request) *Error {
 	form := searchForm{}
 	return s.render(w, r, s.templates.search, nil, form)
-}
-
-func (s *server) servePets(w http.ResponseWriter, r *http.Request) *Error {
-	pets, err := s.store.GetAllPets()
-	if err != nil {
-		return E(err, "Error getting all pets", http.StatusInternalServerError)
-	}
-	return s.render(w, r, s.templates.showPets, pets, nil)
 }
 
 func (s *server) servePhoto(w http.ResponseWriter, r *http.Request) *Error {
