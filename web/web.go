@@ -263,6 +263,10 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// https://www.owasp.org/index.php/HTTP_Strict_Transport_Security_Cheat_Sheet
 		w.Header().Set("Strict-Transport-Security", "max-age=86400; includeSubDomains")
 	}
+	w.Header().Set("X-Frame-Options", "DENY")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("X-XSS-Protection", "1; mode=block")
+
 	s.handlers.ServeHTTP(w, r)
 }
 
